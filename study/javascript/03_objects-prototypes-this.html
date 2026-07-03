@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript 3주차 · 객체와 프로토타입, this</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 14</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">3주차 · 객체와 프로토타입</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">프로토타입과 <em>this</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 객체 리터럴 기초 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">Object Literal · 객체 리터럴</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">객체는 { } 로 바로 만든다</h2>
+        <p class="slide-sub">
+          Python의 dict와 비슷해 보이지만, JS 객체 리터럴은 처음부터 메서드를
+          품고 있고, 실은 그 뒤에 프로토타입이라는 구조가 숨어 있다.
+        </p>
+        <div class="code-block">
+          <span class="cm">// 객체 리터럴 — 값과 동작을 한 번에 담는다</span>
+          const user = { name: "김코딩", age: 28, greet() {
+          <span class="cm">// 메서드 축약 문법</span> return `안녕,
+          ${this.name}`; }, }; console.log(user.name);
+          <span class="cm">// "김코딩"</span> console.log(user.greet());
+          <span class="cm">// "안녕, 김코딩"</span>
+        </div>
+      </div>
+
+      <!-- 03. 프로토타입 체인이란 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">Prototype Chain · 프로토타입 체인</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">모든 객체는 다른 객체를 가리키고 있다</h2>
+        <p class="slide-sub">
+          user에 없는 프로퍼티를 찾으면, JS 엔진은 포기하지 않고 프로토타입을
+          타고 올라가며 찾는다. 이 연결고리가 프로토타입 체인이다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">내 객체</p>
+            <p class="tl-title">user</p>
+            <p class="tl-desc">own property: name, age</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">프로토타입</p>
+            <p class="tl-title">Object.prototype</p>
+            <p class="tl-desc">toString, hasOwnProperty 등 공통 메서드</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">체인의 끝</p>
+            <p class="tl-title">null</p>
+            <p class="tl-desc">더 이상 찾을 곳이 없다</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04. 프로토타입 체인 직접 확인하기 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">Prototype Chain · 직접 확인</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">getPrototypeOf와 __proto__</h2>
+        <div class="code-block">
+          const user = { name: "김코딩" }; Object.getPrototypeOf(user) ===
+          Object.prototype; <span class="cm">// true</span> user.__proto__ ===
+          Object.prototype; <span class="cm">// true (레거시 접근자)</span>
+
+          user.hasOwnProperty("name");
+          <span class="cm">// true — user 자신의 프로퍼티</span>
+          user.hasOwnProperty("toString");
+          <span class="cm">// false — 프로토타입에서 상속</span>
+
+          user.toString();
+          <span class="cm">// "[object Object]" — 체인을 타고 찾아낸다</span>
+        </div>
+        <p class="slide-note">
+          __proto__는 과거 호환을 위해 남은 접근자일 뿐, 실무에서는
+          Object.getPrototypeOf / setPrototypeOf를 쓴다.
+        </p>
+      </div>
+
+      <!-- 05. Object.create로 프로토타입 상속 만들기 -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">Object.create · 프로토타입 상속</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">class 없이 상속 구조 만들기</h2>
+        <div class="code-block">
+          <span class="cm"
+            >// animalProto를 프로토타입으로 삼는 새 객체를 만든다</span
+          >
+          const animalProto = { speak() { return `${this.name}가 소리를 낸다`;
+          }, }; const dog = Object.create(animalProto); dog.name = "바둑이";
+          dog.speak();
+          <span class="cm">// "바둑이가 소리를 낸다"</span>
+          Object.getPrototypeOf(dog) === animalProto;
+          <span class="cm">// true</span>
+        </div>
+        <p class="slide-note">
+          Object.create(proto)는 지정한 객체를 프로토타입으로 삼는 새 객체를
+          만든다. class 없이도 상속은 이렇게 이미 가능하다.
+        </p>
+      </div>
+
+      <!-- 06. class는 문법 설탕이다 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">class · 문법 설탕</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">class Animal {}을 뜯어보기</h2>
+        <div class="code-block">
+          class Animal { constructor(name) { this.name = name; } speak() {
+          return `${this.name}가 소리를 낸다`; } } typeof Animal;
+          <span class="cm">// "function" — class는 사실 함수다</span> typeof
+          Animal.prototype.speak;
+          <span class="cm">// "function" — speak는 prototype에 붙어있다</span>
+
+          const a = new Animal("바둑이"); Object.getPrototypeOf(a) ===
+          Animal.prototype; <span class="cm">// true</span>
+        </div>
+        <p class="slide-note">
+          class 선언은 함수(생성자) + prototype에 메서드 등록을 자동으로 해주는
+          문법일 뿐, 완전히 새로운 실행 모델이 아니다.
+        </p>
+      </div>
+
+      <!-- 07. extends도 프로토타입 체인이다 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">extends · 상속 증명</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">extends도 체인을 연결할 뿐이다</h2>
+        <div class="code-block">
+          class Dog extends Animal { bark() { return `${this.name}: 멍멍!`; } }
+          const d = new Dog("바둑이"); d.speak();
+          <span class="cm">// Animal.prototype에서 물려받음</span> d.bark();
+          <span class="cm">// Dog.prototype 자기 것</span>
+
+          Object.getPrototypeOf(Dog.prototype) === Animal.prototype;
+          <span class="cm">// true</span> d instanceof Animal;
+          <span class="cm">// true</span>
+        </div>
+        <p class="slide-note">
+          extends는 Dog.prototype의 프로토타입을 Animal.prototype으로 연결해줄
+          뿐이다. 05번 슬라이드의 Object.create와 원리가 같다.
+        </p>
+      </div>
+
+      <!-- 08. this 바인딩 4가지 규칙 개관 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">this · 4가지 규칙</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">this는 "누가 호출했는가"로 결정된다</h2>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">1. 일반 함수 호출</p>
+            <p class="card-title">func()</p>
+            <p class="card-desc">
+              this는 전역 객체(strict 모드에서는 undefined)를 가리킨다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">2. 메서드 호출</p>
+            <p class="card-title">obj.method()</p>
+            <p class="card-desc">this는 obj — 점(.) 바로 앞의 객체가 된다.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">3. 생성자 호출</p>
+            <p class="card-title">new Func()</p>
+            <p class="card-desc">this는 new가 새로 만드는 인스턴스가 된다.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">4. call / apply / bind</p>
+            <p class="card-title">func.call(obj)</p>
+            <p class="card-desc">
+              this를 개발자가 명시적으로 지정해서 호출한다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 09. 코드로 보는 this 4가지 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">this · 코드로 확인</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">같은 함수, 다른 this</h2>
+        <div class="code-block">
+          function whoAmI() { return this; } whoAmI();
+          <span class="cm">// 1) 일반 호출 → globalThis / undefined</span>
+
+          const user = { name: "김코딩", whoAmI }; user.whoAmI();
+          <span class="cm">// 2) 메서드 호출 → user 객체</span>
+
+          function User(name) { this.name = name; } const u = new
+          User("이코딩");
+          <span class="cm">// 3) 생성자 호출 → 새 인스턴스</span>
+
+          whoAmI.call({ name: "박코딩" });
+          <span class="cm">// 4) call → 명시된 객체</span> whoAmI.apply({ name:
+          "박코딩" });
+          <span class="cm">// apply → 인자를 배열로 전달</span> const bound =
+          whoAmI.bind({ name: "박코딩" }); bound();
+          <span class="cm">// bind → this가 영구히 고정된 새 함수</span>
+        </div>
+      </div>
+
+      <!-- 10. 화살표 함수는 this를 바인딩하지 않는다 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">Arrow Function · 렉시컬 this</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">화살표 함수는 자신만의 this가 없다</h2>
+        <div class="code-block">
+          const timerBroken = { seconds: 0, start() { setInterval(function () {
+          this.seconds++;
+          <span class="cm">// 일반 함수 → this가 timerBroken이 아님</span>
+          console.log(this.seconds); <span class="cm">// NaN 혹은 에러</span> },
+          1000); }, }; const timerFixed = { seconds: 0, start() { setInterval(()
+          => { this.seconds++;
+          <span class="cm"
+            >// 화살표 함수 → 바깥(start)의 this를 그대로 사용</span
+          >
+          console.log(this.seconds); <span class="cm">// 1, 2, 3 ...</span> },
+          1000); }, };
+        </div>
+        <p class="slide-note">
+          화살표 함수는 정의될 때의 스코프에서 this를 "빌려온다"(lexical this).
+          그래서 call/apply/bind로도 바꿀 수 없다.
+        </p>
+      </div>
+
+      <!-- 11. Python self vs JS this -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">Python vs JavaScript</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">self는 인자, this는 호출의 결과</h2>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Python — self</p>
+            <ul>
+              <li>메서드의 명시적인 첫 번째 매개변수</li>
+              <li>def greet(self): 처럼 항상 눈에 보인다</li>
+              <li>instance.method()로 부르면 self는 instance로 고정</li>
+              <li>정의만 봐도 self가 무엇인지 코드로 드러난다</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">JavaScript — this</p>
+            <ul>
+              <li>매개변수가 아니라 호출 방식이 결정하는 값</li>
+              <li>함수 정의만 봐서는 this를 알 수 없다</li>
+              <li>같은 함수도 호출 방식에 따라 this가 매번 바뀐다</li>
+              <li>화살표 함수만 예외적으로 정의 시점의 this를 고정한다</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 실습 미리보기 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">실습 · Hands-on</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">class 없이, class처럼 만들어보기</h2>
+        <p class="slide-sub">
+          같은 Counter를 프로토타입 버전과 class 버전으로 각각 만들고,
+          Object.getPrototypeOf로 두 버전의 구조가 결국 같다는 걸 직접 확인한다.
+        </p>
+        <p class="code-label">PROTOTYPE 버전</p>
+        <div class="code-block">
+          const counterProto = { increment() { this.count++; return this.count;
+          }, }; function createCounter(start) { const counter =
+          Object.create(counterProto); counter.count = start; return counter; }
+        </div>
+        <p class="code-label">CLASS 버전</p>
+        <div class="code-block">
+          class Counter { constructor(start) { this.count = start; } increment()
+          { this.count++; return this.count; } }
+        </div>
+      </div>
+
+      <!-- 13. 흔한 실수 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">흔한 실수 · Pitfalls</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">this는 이렇게 자주 사고를 낸다</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <p class="problem-num">01</p>
+            <div class="problem-content">
+              <strong>콜백에서 this를 잃어버림</strong>
+              <span
+                >setTimeout, addEventListener 등에 일반 함수를 그대로 넘기면
+                호출 방식이 바뀌면서 this도 원하던 객체를 더 이상 가리키지
+                않는다. 화살표 함수나 bind로 고정해야 한다.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <p class="problem-num">02</p>
+            <div class="problem-content">
+              <strong>화살표 함수를 메서드로 정의</strong>
+              <span
+                >const obj = { value: 1, get: () => this.value } 처럼 쓰면
+                화살표 함수라 this가 obj를 가리키지 않는다. 메서드는 일반
+                함수(축약 문법)로 정의해야 한다.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <p class="problem-num">03</p>
+            <div class="problem-content">
+              <strong>메서드만 떼어 콜백으로 넘김</strong>
+              <span
+                >onClick={instance.handleClick}처럼 메서드 참조만 넘기면 this가
+                사라진다. instance.handleClick.bind(instance)나 화살표 함수
+                프로퍼티로 감싸야 한다.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 14. 마무리 요약 -->
+      <div class="slide" data-index="13">
+        <p class="eyebrow">마무리</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">
+          class는 <em>겉모습</em>일 뿐, 뼈대는 프로토타입이다
+        </h2>
+        <p class="slide-sub">
+          프로토타입 체인과 this의 동적 바인딩은 이후 배열/객체 메서드, 비동기
+          콜백, DOM 이벤트 핸들러까지 계속 따라다니는 개념이다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Prototype</p>
+            <p class="card-title">객체는 프로토타입으로 연결된다</p>
+            <p class="card-desc">
+              Object.getPrototypeOf로 체인을 타고 프로퍼티를 찾는다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">class</p>
+            <p class="card-title">결국 문법 설탕이다</p>
+            <p class="card-desc">
+              내부는 함수 생성자 + prototype 메서드 등록일 뿐이다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">this</p>
+            <p class="card-title">호출 방식이 this를 결정한다</p>
+            <p class="card-desc">
+              정의가 아니라 호출 시점에 정해진다. 화살표 함수만 예외다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 14</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>

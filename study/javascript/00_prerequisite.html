@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript 0주차 · 사전 준비 (개발 환경 설정)</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* OS COMPARE GRID (new — for Windows/Linux/macOS differences) */
+      .os-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        margin-top: 2rem;
+        max-width: 960px;
+        width: 100%;
+      }
+
+      .os-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 1.2rem 1.3rem;
+        text-align: left;
+      }
+
+      .os-card .os-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.7rem;
+        color: var(--accent);
+      }
+
+      .os-card ul {
+        list-style: none;
+      }
+      .os-card ul li {
+        font-size: 0.78rem;
+        color: var(--text);
+        line-height: 1.6;
+        padding: 0.15rem 0;
+        font-family: "Maru Buri", serif;
+      }
+
+      .os-card .cmd {
+        display: block;
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.68rem;
+        line-height: 1.6;
+        padding: 0.6rem 0.7rem;
+        margin-top: 0.6rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 13</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">0주차 · 사전 준비</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">JavaScript 시작 전 <em>환경 설정</em></h1>
+        <p class="slide-sub">
+          VSCode 기준, Windows / Linux / macOS 차이를 항목별로 정리합니다. ← →
+          키로 페이지를 넘길 수 있어요.
+        </p>
+      </div>
+
+      <!-- 02. 왜 사전 준비가 중요한가 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">들어가며</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Node 버전 관리자가 OS마다 다른 도구다</h2>
+        <p class="slide-sub">
+          JavaScript는 브라우저/Node 어디서나 실행 파일 자체는 동일하지만,
+          "여러 Node 버전을 설치하고 전환하는 도구"가 Windows와
+          Linux/macOS에서 서로 다른 프로그램이에요. 이 차이를 모르고 튜토리얼을
+          그대로 따라 하면 명령어가 안 먹히는 경우가 많습니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">주의</p>
+            <ul>
+              <li>nvm(Linux/macOS)과 nvm-windows는 다른 프로젝트</li>
+              <li>PowerShell 실행 정책이 npm 스크립트를 막을 수 있음</li>
+              <li>Windows 긴 경로 문제(node_modules 중첩)</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">이 자료의 기준</p>
+            <ul>
+              <li>Node.js LTS 버전 사용</li>
+              <li>VSCode + ESLint + Prettier 확장 기준</li>
+              <li>OS별 버전 관리자를 각각 안내</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. 준비물 체크리스트 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">준비물</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">설치할 4가지</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>VSCode</strong>
+              <span>에디터 겸 통합 터미널, 디버거 환경.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>ESLint / Prettier 확장</strong>
+              <span>문법 검사와 코드 포맷을 자동화.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>Node.js (LTS) + npm</strong>
+              <span>런타임과 패키지 매니저. npm은 Node에 기본 포함.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>버전 관리자 (nvm 계열)</strong>
+              <span>OS별로 다른 도구를 씁니다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04. VSCode 설치 (OS별) -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">VSCode 설치</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">OS별 설치 방법</h2>
+        <div class="os-grid">
+          <div class="os-card">
+            <p class="os-label">Windows</p>
+            <ul>
+              <li>공식 installer(.exe) 실행</li>
+              <li>"PATH에 추가" 체크박스 체크</li>
+            </ul>
+            <span class="cmd">winget install Microsoft.VisualStudioCode</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">Linux</p>
+            <ul>
+              <li>.deb/.rpm 또는 apt 저장소 등록</li>
+              <li>code 명령어 자동 등록됨</li>
+            </ul>
+            <span class="cmd">sudo apt install code
+# 또는 snap install code --classic</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">macOS</p>
+            <ul>
+              <li>.dmg를 Applications로 드래그</li>
+              <li>code 명령은 팔레트에서 별도 등록</li>
+            </ul>
+            <span class="cmd">brew install --cask visual-studio-code
+# 이후 Cmd+Shift+P
+# "Shell Command: Install 'code'"</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05. VSCode 확장 설치 -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">VSCode 확장</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">JavaScript 개발에 필요한 확장</h2>
+        <p class="slide-sub">
+          OS 상관없이 동일하게 설치합니다.
+        </p>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">dbaeumer.vscode-eslint</p>
+            <p class="card-title">ESLint</p>
+            <p class="card-desc">
+              저장 시 자동으로 린트 규칙 위반을 표시.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">esbenp.prettier-vscode</p>
+            <p class="card-title">Prettier</p>
+            <p class="card-desc">
+              저장 시 코드 스타일을 일관되게 자동 포맷.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">christian-kohler.npm-intellisense</p>
+            <p class="card-title">npm Intellisense</p>
+            <p class="card-desc">
+              require/import 시 설치된 패키지 이름을 자동완성.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">firefox/chrome devtools 확장(선택)</p>
+            <p class="card-title">브라우저 디버깅 연동</p>
+            <p class="card-desc">
+              7주차 DOM 위젯 실습에서 브라우저 안에 중단점을 걸 때 유용.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 06. Node.js 설치 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">Node.js 설치</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Node.js LTS 버전 설치</h2>
+        <div class="os-grid">
+          <div class="os-card">
+            <p class="os-label">Windows</p>
+            <ul>
+              <li>winget 또는 공식 .msi installer</li>
+              <li>npm은 자동으로 함께 설치됨</li>
+            </ul>
+            <span class="cmd">winget install OpenJS.NodeJS.LTS</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">Linux</p>
+            <ul>
+              <li>배포판 기본 저장소는 버전이 낮을 수 있음</li>
+              <li>NodeSource 저장소 등록 권장</li>
+            </ul>
+            <span class="cmd">curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install nodejs</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">macOS</p>
+            <ul>
+              <li>brew로 간단 설치</li>
+              <li>버전 관리 원하면 nvm 권장</li>
+            </ul>
+            <span class="cmd">brew install node</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 07. 버전 관리자 차이 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">버전 관리자</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">nvm vs nvm-windows, 다른 프로그램입니다</h2>
+        <p class="slide-sub">
+          이름은 비슷하지만 Windows용은 커뮤니티가 별도로 만든 완전히 다른
+          도구예요. 명령어는 비슷해도 설치 방식과 동작이 다릅니다.
+        </p>
+        <div class="os-grid">
+          <div class="os-card">
+            <p class="os-label">Windows (nvm-windows)</p>
+            <ul>
+              <li>coreybutler/nvm-windows, 관리자 권한 설치 필요</li>
+              <li>.nvmrc 자동 인식 안 됨</li>
+            </ul>
+            <span class="cmd">winget install CoreyButler.NVMforWindows
+nvm install lts
+nvm use 20.x.x</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">Linux (nvm)</p>
+            <ul>
+              <li>공식 nvm.sh 스크립트</li>
+              <li>.nvmrc 자동 인식(nvm use)</li>
+            </ul>
+            <span class="cmd">curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm install --lts
+nvm use --lts</span>
+          </div>
+          <div class="os-card">
+            <p class="os-label">macOS (nvm)</p>
+            <ul>
+              <li>Linux와 완전히 동일한 스크립트</li>
+              <li>brew install nvm으로도 설치 가능</li>
+            </ul>
+            <span class="cmd">curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm install --lts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 08. PATH/실행 정책 차이 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">환경 설정 차이</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Windows만 겪는 두 가지 함정</h2>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">PowerShell 실행 정책</p>
+            <p class="card-title">npm.ps1 실행이 차단될 수 있음</p>
+            <p class="card-desc">
+              "이 시스템에서 스크립트를 실행할 수 없습니다" 오류가 뜨면
+              PowerShell(관리자)에서 Set-ExecutionPolicy
+              RemoteSigned -Scope CurrentUser 실행. Linux/macOS의 bash/zsh는
+              이런 제약이 없음.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">경로 길이 제한</p>
+            <p class="card-title">중첩된 node_modules에서 에러 가능</p>
+            <p class="card-desc">
+              Windows 10 이상은 레지스트리에서 LongPathsEnabled를 켜면 대부분
+              해결. Linux/macOS는 경로 길이 제한이 훨씬 넉넉해 신경 쓸 필요
+              없음.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 09. 설치 확인 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">설치 확인</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">버전 체크로 마무리</h2>
+        <p class="code-label">터미널 (모든 OS 공통 명령)</p>
+        <div class="code-block">
+          node -v npm -v
+          <span class="cm"># nvm 사용 중이면
+which node   # macOS/Linux
+where.exe node   # Windows</span
+          >
+        </div>
+        <p class="slide-note">
+          node -v가 nvm으로 설치한 버전이 아니라면, 시스템에 기본 설치된
+          Node가 먼저 잡히고 있는 경우가 많습니다.
+        </p>
+      </div>
+
+      <!-- 10. OS별 자주 걸리는 문제 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">자주 걸리는 문제</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">OS별 트러블슈팅</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">Win</span>
+            <div class="problem-content">
+              <strong>npm run dev가 "실행할 수 없음"으로 막힘</strong>
+              <span
+                >PowerShell 실행 정책 문제. RemoteSigned로 바꾸거나 VSCode
+                터미널을 cmd로 바꿔서 실행.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">Linux</span>
+            <div class="problem-content">
+              <strong>sudo npm install -g 시 권한 꼬임</strong>
+              <span
+                >전역 설치를 sudo로 하면 이후 권한 문제가 반복됨. nvm으로
+                설치한 Node는 sudo 없이 전역 설치 가능.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">macOS</span>
+            <div class="problem-content">
+              <strong>brew node와 nvm node가 충돌</strong>
+              <span
+                >두 가지 방법을 동시에 쓰면 which node 결과가 매번 달라짐.
+                하나만 선택해서 사용하는 것을 권장.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">공통</span>
+            <div class="problem-content">
+              <strong>package-lock.json 충돌</strong>
+              <span
+                >npm 버전이 서로 다르면 lock 파일 포맷이 미묘하게 달라짐.
+                팀 전체가 같은 Node LTS 버전을 쓰는 게 안전.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. VSCode 통합 터미널 셸 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">VSCode 통합 터미널</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">기본 셸, 어떤 걸 쓸까</h2>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">Windows</p>
+            <p class="card-title">PowerShell 또는 Git Bash</p>
+            <p class="card-desc">
+              기본은 PowerShell. Linux 셸 문법(&& 뒤 조건 등)에 익숙하다면
+              Git Bash를 기본 프로필로 지정해도 좋음.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Linux / macOS</p>
+            <p class="card-title">bash 또는 zsh 그대로</p>
+            <p class="card-desc">
+              별도 설정 없이 시스템 기본 셸이 열림. macOS 기본은 zsh.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 실습: Hello World 프로젝트 세팅 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">실습</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">VSCode에서 첫 Node 스크립트 실행하기</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>빈 폴더 생성 후 code . 로 VSCode 열기</strong>
+              <span>mkdir hello-js && cd hello-js && code .</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>npm init -y 로 package.json 생성</strong>
+              <span>기본값으로 초기화 후 index.js 파일 생성.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>console.log("Hello, JS!") 작성 후 실행</strong>
+              <span>통합 터미널에서 node index.js.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>F5로 디버거 실행해보기</strong>
+              <span>
+                "Run and Debug" → Node.js 자동 감지. 중단점을 걸고 값이
+                보이면 연동 성공.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. 마무리 체크인 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">마무리</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">1주차 들어가기 전 셀프 체크</h2>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">
+              node -v, npm -v가 오류 없이 출력되나요?
+              <p class="checkin-hint">
+                nvm으로 설치했다면 which node 결과도 함께 확인하세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              내 OS의 버전 관리자 이름이 nvm인지 nvm-windows인지 알고
+              있나요?
+              <p class="checkin-hint">
+                두 도구는 이름만 비슷할 뿐 설치·명령어 방식이 다릅니다.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              Windows라면 PowerShell 실행 정책 문제를 겪지 않았나요?
+              <p class="checkin-hint">
+                npm 스크립트가 막히면 RemoteSigned 정책으로 바꿔보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ESLint/Prettier가 저장할 때 자동으로 동작하나요?
+              <p class="checkin-hint">
+                settings.json에 "editor.formatOnSave": true를 켜두면
+                편해요.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 13</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>

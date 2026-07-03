@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript 1주차 · 실행 환경과 기본 문법</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 12</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">1주차 · 실행 환경과 기본 문법</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">실행 환경과 <em>기본 문법</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. AGENDA -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">Overview</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">오늘의 <em>흐름</em></h1>
+        <p class="slide-sub">
+          Python에 없는 개념 위주로 속도를 늦추고, 겹치는 부분은 빠르게
+          지나갑니다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 1</p>
+            <p class="tl-title">실행 환경</p>
+            <p class="tl-desc">브라우저 콘솔 vs Node.js</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 2</p>
+            <p class="tl-title">변수와 스코프</p>
+            <p class="tl-desc">var / let / const</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 3</p>
+            <p class="tl-title">타입과 비교</p>
+            <p class="tl-desc">동적 타이핑, == vs ===</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">STEP 4</p>
+            <p class="tl-title">제어문·연산자</p>
+            <p class="tl-desc">빠르게 훑기</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">STEP 5</p>
+            <p class="tl-title">실습</p>
+            <p class="tl-desc">타입 강제 변환 실험</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. 브라우저 콘솔 vs NODE.JS -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">Runtime</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">JS가 돌아가는 <em>두 무대</em></h1>
+        <p class="slide-sub">
+          같은 JavaScript 문법이지만, 실행되는 환경에 따라 쓸 수 있는 것이
+          다릅니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">브라우저 콘솔</p>
+            <ul>
+              <li>웹 페이지 안에서 실행</li>
+              <li>전역 객체는 window</li>
+              <li>DOM/BOM 조작 가능</li>
+              <li>F12 → Console 탭에서 접근</li>
+              <li>파일 시스템 접근 불가(샌드박스)</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Node.js</p>
+            <ul>
+              <li>OS 위에서 독립적으로 실행</li>
+              <li>전역 객체는 global(globalThis)</li>
+              <li>DOM 없음, 서버·CLI·빌드용</li>
+              <li>터미널의 node 명령/REPL로 접근</li>
+              <li>fs, 네트워크 등 시스템 자원 접근 가능</li>
+            </ul>
+          </div>
+        </div>
+        <p class="slide-note">
+          Python으로 치면 브라우저 콘솔은 "웹페이지 안의 인터프리터", Node.js는
+          python 명령어 그 자체에 가깝습니다.
+        </p>
+      </div>
+
+      <!-- 04. var / let / const 개요 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">Variables</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">변수 선언, <em>세 가지</em></h1>
+        <p class="slide-sub">
+          Python엔 변수 선언 키워드 자체가 없었지만, JS는 셋 중 하나를 반드시
+          골라야 합니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Legacy</p>
+            <p class="card-title">var</p>
+            <p class="card-desc">
+              함수 스코프. 재선언·재할당 모두 가능. 호이스팅됨. 오늘날은 거의
+              쓰지 않음.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Mutable</p>
+            <p class="card-title">let</p>
+            <p class="card-desc">
+              블록 스코프. 재할당은 가능하지만 재선언은 불가. 값이 바뀌는 변수에
+              사용.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Default choice</p>
+            <p class="card-title">const</p>
+            <p class="card-desc">
+              블록 스코프. 재할당 불가(재바인딩 금지, 객체 내부는 변경 가능).
+              기본으로 우선 선택.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05. 함수 스코프 vs 블록 스코프 -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">Scope · JS-specific</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">함수 스코프 vs <em>블록 스코프</em></h1>
+        <p class="slide-sub">
+          Python엔 이런 구분이 아예 없습니다(if/for는 스코프를 만들지 않음).
+          JS에서는 var만 예외적으로 블록을 무시합니다.
+        </p>
+        <p class="code-label">Example</p>
+        <div class="code-block">
+          <span class="cm"
+            >// var: 함수 스코프 — if 블록을 무시하고 새어 나온다</span
+          >
+          function testVar() { if (true) { var x = 1; } console.log(x);
+          <span class="cm">// 1 — 블록 밖인데도 접근됨</span>
+          }
+
+          <span class="cm">// let: 블록 스코프 — if 블록 안에 갇힌다</span>
+          function testLet() { if (true) { let y = 1; } console.log(y);
+          <span class="cm">// ReferenceError: y is not defined</span> }
+        </div>
+      </div>
+
+      <!-- 06. var 호이스팅 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">Hoisting · JS-specific</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">var는 <em>끌어올려진다</em></h1>
+        <p class="slide-sub">
+          var 선언은 스코프 최상단으로 끌어올려져(hoisting) undefined로 미리
+          초기화됩니다. let/const는 TDZ(Temporal Dead Zone)로 접근 자체를
+          막습니다.
+        </p>
+        <p class="code-label">Example</p>
+        <div class="code-block">
+          console.log(a);
+          <span class="cm">// undefined — 에러가 아니다!</span> var a = 5;
+          console.log(b);
+          <span class="cm"
+            >// ReferenceError: Cannot access 'b' before initialization</span
+          >
+          let b = 5;
+        </div>
+        <p class="slide-note">
+          Python이었다면 두 경우 모두 NameError였을 상황입니다. var의 "조용한
+          undefined"가 버그의 씨앗이 됩니다.
+        </p>
+      </div>
+
+      <!-- 07. == vs === -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">Comparison · JS-specific</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">== 와 <em>===</em></h1>
+        <p class="slide-sub">
+          Python의 ==는 타입까지 고려해 비교하지만, JS의 ==는 타입을 강제 변환한
+          뒤 비교합니다. 실무에서는 항상 ===를 씁니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">coercion</p>
+            <p class="card-title">"5" == 5</p>
+            <p class="card-desc">true — 문자열이 숫자로 변환된 뒤 비교됨</p>
+          </div>
+          <div class="card">
+            <p class="card-label">strict</p>
+            <p class="card-title">"5" === 5</p>
+            <p class="card-desc">
+              false — 타입이 다르므로 변환 없이 즉시 false
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">coercion</p>
+            <p class="card-title">0 == false</p>
+            <p class="card-desc">true — boolean이 숫자 0으로 변환됨</p>
+          </div>
+          <div class="card">
+            <p class="card-label">coercion</p>
+            <p class="card-title">null == undefined</p>
+            <p class="card-desc">true — 이 둘만 예외적으로 서로 같다고 취급</p>
+          </div>
+          <div class="card">
+            <p class="card-label">coercion</p>
+            <p class="card-title">[] == false</p>
+            <p class="card-desc">true — 배열이 ""로, ""가 다시 0으로 변환됨</p>
+          </div>
+          <div class="card">
+            <p class="card-label">gotcha</p>
+            <p class="card-title">NaN === NaN</p>
+            <p class="card-desc">
+              false — NaN은 자기 자신과도 같지 않음(Number.isNaN 사용)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 08. typeof 결과표 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">typeof · JS-specific</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">typeof는 <em>문자열을 반환</em></h1>
+        <p class="slide-sub">
+          Python의 type()과 달리 typeof는 타입 이름을 문자열로 돌려줍니다.
+          그리고 유명한 함정이 하나 있습니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">typeof "text"</p>
+            <p class="card-title">"string"</p>
+          </div>
+          <div class="card">
+            <p class="card-label">typeof 5</p>
+            <p class="card-title">"number"</p>
+          </div>
+          <div class="card">
+            <p class="card-label">typeof true</p>
+            <p class="card-title">"boolean"</p>
+          </div>
+          <div class="card">
+            <p class="card-label">typeof undefined</p>
+            <p class="card-title">"undefined"</p>
+          </div>
+          <div class="card">
+            <p class="card-label">typeof function(){}</p>
+            <p class="card-title">"function"</p>
+          </div>
+          <div class="card">
+            <p class="card-label">typeof null</p>
+            <p class="card-title">"object" ⚠️</p>
+            <p class="card-desc">
+              1995년부터 이어진 언어 버그. null 체크는 반드시 === null로.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 09. 제어문·연산자 빠르게 훑기 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">Control Flow · 빠르게</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">제어문은 <em>거의 그대로</em></h1>
+        <p class="slide-sub">
+          Python/Java/C에서 이미 아는 개념입니다. 문법 차이만 짚고 넘어갑니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">조건문</p>
+            <p class="card-title">if / else if / else</p>
+            <p class="card-desc">Java/C와 동일. 소괄호+중괄호 필수.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">반복문</p>
+            <p class="card-title">for / while / for...of</p>
+            <p class="card-desc">for...of가 Python의 for-in 역할.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">분기</p>
+            <p class="card-title">switch</p>
+            <p class="card-desc">case마다 break 필요(fall-through 주의).</p>
+          </div>
+          <div class="card">
+            <p class="card-label">삼항 연산자</p>
+            <p class="card-title">cond ? a : b</p>
+            <p class="card-desc">Python의 a if cond else b와 동일한 역할.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">논리 연산자</p>
+            <p class="card-title">&& / || / !</p>
+            <p class="card-desc">and/or/not 대신 기호 사용. 단축 평가 동일.</p>
+          </div>
+          <div class="card">
+            <p class="card-label">nullish</p>
+            <p class="card-title">??</p>
+            <p class="card-desc">
+              null/undefined일 때만 대체값 사용(4주차에 자세히).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. 실습 미리보기: 타입 강제 변환 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">Hands-on Preview</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">타입 강제 변환 <em>실험하기</em></h1>
+        <p class="slide-sub">
+          Node.js REPL(터미널에 node 입력) 또는 브라우저 콘솔에 한 줄씩 쳐보며
+          규칙을 스스로 정리해 보세요.
+        </p>
+        <p class="code-label">REPL</p>
+        <div class="code-block">
+          <span class="cm">&gt; "5" + 3</span> '53'
+          <span class="cm">// + 는 문자열 연결을 우선한다</span>
+
+          <span class="cm">&gt; "5" - 3</span>
+          2 <span class="cm">// - 는 문자열을 숫자로 변환 후 계산</span>
+
+          <span class="cm">&gt; "5" * "2"</span>
+          10 <span class="cm">// 산술 연산자는 항상 숫자로 변환</span>
+
+          <span class="cm">&gt; true + true</span>
+          2 <span class="cm">// boolean이 1/0으로 변환</span>
+
+          <span class="cm">&gt; [] + []</span>
+          '' <span class="cm">// 배열이 문자열 ""로 변환</span>
+        </div>
+        <p class="slide-note">
+          규칙: +는 피연산자 중 하나라도 문자열이면 문자열 연결, 그 외 산술
+          연산자는 무조건 숫자 변환을 시도합니다.
+        </p>
+      </div>
+
+      <!-- 11. 흔한 실수 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">Common Pitfalls</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">가장 흔한 <em>실수 4가지</em></h1>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>var 호이스팅으로 인한 조용한 버그</strong>
+              <span
+                >선언 전에 사용해도 에러 없이 undefined가 나와, 문제를 한참
+                뒤에야 발견하게 됩니다.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>== 로 비교하다 생기는 예상 밖의 true</strong>
+              <span
+                >"0" == false, [] == false 처럼 직관과 어긋나는 결과. 항상 ===를
+                기본으로 사용하세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>var를 블록 스코프로 착각</strong>
+              <span
+                >if/for 블록 안에서 var로 선언해도 블록 밖에서 그대로
+                접근됩니다. let/const로 습관을 바꾸세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>typeof null === "object"를 null 체크에 사용</strong>
+              <span
+                >null 여부 확인은 typeof가 아니라 value === null로 해야
+                합니다.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 마무리 요약 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">Wrap-up</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">오늘의 <em>핵심 요약</em></h1>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">
+              Node.js와 브라우저 콘솔은 같은 언어, 다른 무대
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              const 기본, 재할당 필요할 때만 let, var는 쓰지 않기
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              비교는 항상 ===, ==의 타입 강제 변환은 신뢰하지 않기
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              제어문·연산자는 이미 알던 것 + 기호 몇 개만 새로 익히면 끝
+            </div>
+          </div>
+        </div>
+        <p class="slide-note">
+          다음 주 — 2주차: 함수와 클로저 (함수 표현식, 화살표 함수, 클로저)
+        </p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 12</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>
