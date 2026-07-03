@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C 5주차 · 파일 입출력과 표준 라이브러리</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 12</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">파일 입출력과 <em>표준 라이브러리</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 이번 주 목표 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주 <em>목표</em></h2>
+        <p class="slide-sub">
+          Python의 open()과 예외 처리에 익숙한 감각을, 반환값을 직접 체크해야
+          하는 C의 세계로 옮겨봅니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Stream</p>
+            <p class="card-title">FILE* 스트림 다루기</p>
+            <p class="card-desc">
+              fopen/fread/fwrite/fclose와 텍스트·바이너리 모드의 차이를
+              이해합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">String</p>
+            <p class="card-title">문자열 함수와 버퍼 안전</p>
+            <p class="card-desc">
+              strcpy/strncpy/strtok/sscanf를 다루며 버퍼 오버플로우를 피하는
+              습관을 만듭니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Error</p>
+            <p class="card-title">에러 처리 관례</p>
+            <p class="card-desc">
+              errno/perror/strerror와 반환값 체크 패턴으로 예외 없는 세상에서
+              실패를 다룹니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. 파일 열고 닫기 기본 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">fopen / fread / fwrite / <em>fclose</em></h2>
+        <p class="slide-sub">
+          Python의 open()은 실패하면 예외를 던지지만, fopen()은 NULL을 반환할
+          뿐입니다. try/except가 없으니 직접 체크해야 해요.
+        </p>
+        <p class="code-label">기본 패턴</p>
+        <div class="code-block">
+          FILE *fp = fopen("data.txt", "r");
+          <span class="cm"
+            >// with open(...) as f: 같은 자동 정리는 없다 — NULL 체크는
+            필수</span
+          >
+          if (fp == NULL) { perror("fopen 실패"); return 1; } char buf[256];
+          size_t n = fread(buf, 1, sizeof buf, fp);
+
+          <span class="cm"
+            >// fread는 실패와 EOF를 반환값만으로 구분하지 못한다</span
+          >
+          if (n < sizeof buf && ferror(fp)) { fprintf(stderr, "fread 오류
+          발생\n"); } if (fclose(fp) != 0) { perror("fclose 실패"); // 버퍼링된
+          쓰기 실패도 여기서 드러날 수 있다 }
+        </div>
+      </div>
+
+      <!-- 04. 텍스트 vs 바이너리 모드 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">텍스트 vs <em>바이너리</em> 모드</h2>
+        <p class="slide-sub">
+          Python은 이 구분을 자주 신경 쓰지 않아도 되지만(대부분 인코딩 문제로
+          국한), C에서는 데이터가 그대로 오가는지 여부가 완전히 달라집니다.
+        </p>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">TEXT MODE — "r" / "w" / "a"</p>
+            <p class="card-title">개행 변환이 일어날 수 있다</p>
+            <p class="card-desc">
+              플랫폼에 따라 줄바꿈이 매핑됩니다(예: 윈도우에서 \n ↔ \r\n). 로그,
+              설정, 소스 코드처럼 사람이 읽는 텍스트에 사용합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">BINARY MODE — "rb" / "wb" / "ab"</p>
+            <p class="card-title">바이트가 변환 없이 그대로 오간다</p>
+            <p class="card-desc">
+              구조체를 통째로 덤프하거나 이미지·직렬화 데이터를 다룰 때는 반드시
+              바이너리 모드를 씁니다.
+            </p>
+          </div>
+        </div>
+        <p class="code-label">구조체를 바이너리로 저장할 때의 함정</p>
+        <div class="code-block">
+          struct Point { int x, y; }; struct Point p = {3, 4}; FILE *fp =
+          fopen("point.bin", "wb"); fwrite(&p, sizeof p, 1, fp);
+          <span class="cm">// 패딩까지 포함해 그대로 기록</span>
+          fclose(fp);
+
+          <span class="cm"
+            >// 주의: 컴파일러/아키텍처마다 구조체 패딩·엔디안이 달라질 수 있어
+            // 이렇게 만든 파일은 이식성이 없다 (다른 머신에서 못 읽을 수
+            있음)</span
+          >
+        </div>
+      </div>
+
+      <!-- 05. strcpy vs strncpy 안전성 비교 -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">strcpy vs <em>strncpy</em></h2>
+        <p class="slide-sub">
+          Python의 문자열은 크기를 몰라도 안전합니다. C에서는 개발자가 목적지
+          버퍼의 크기를 항상 함께 들고 다녀야 해요.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">strcpy</p>
+            <ul>
+              <li>목적지 버퍼 크기를 인자로 받지 않음</li>
+              <li>src가 dest보다 길면 인접 메모리를 덮어씀</li>
+              <li>gets()와 함께 "쓰지 말아야 할 함수"의 대표격</li>
+              <li>수많은 보안 취약점(CVE)의 원인</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">strncpy + 직접 널 종료</p>
+            <ul>
+              <li>목적지 크기 n을 항상 함께 전달</li>
+              <li>
+                단, src 길이가 n 이상이면 널 종료를 보장하지 않는 함정 존재
+              </li>
+              <li>복사 후 buf[n-1] = '\0'을 직접 붙이는 습관 필요</li>
+              <li>더 안전하려면 snprintf(buf, n, "%s", src) 패턴도 고려</li>
+            </ul>
+          </div>
+        </div>
+        <p class="code-label">버퍼 오버플로우와 strncpy의 함정</p>
+        <div class="code-block">
+          char dest[8];
+
+          <span class="cm"
+            >// 위험: dest는 8바이트인데 src가 더 길면 스택을 덮어씀</span
+          >
+          strcpy(dest, "이 문자열은 너무 깁니다");
+
+          <span class="cm"
+            >// strncpy도 완벽하지 않다 — src가 n자 이상이면 널 종료가 안
+            됨</span
+          >
+          strncpy(dest, "역시 너무 긴 문자열", sizeof dest); dest[sizeof dest -
+          1] = '\0'; <span class="cm">// 직접 널 종료를 보장</span>
+        </div>
+      </div>
+
+      <!-- 06. strtok으로 문자열 토큰화 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title"><em>strtok</em>으로 토큰화하기</h2>
+        <p class="slide-sub">
+          Python의 "a,b,,c".split(",")는 순수 함수지만, strtok은 원본 문자열을
+          직접 파괴하고 내부 static 상태를 기억합니다.
+        </p>
+        <p class="code-label">strtok 기본 사용</p>
+        <div class="code-block">
+          char line[] = "apple,banana,,cherry"; char *tok = strtok(line, ",");
+          while (tok != NULL) { printf("token: %s\n", tok); tok = strtok(NULL,
+          ","); <span class="cm">// 두 번째 호출부터는 첫 인자에 NULL</span>
+          }
+
+          <span class="cm"
+            >// line 자체가 훼손된다: "apple\0banana\0\0cherry" // -> 원본을
+            보존해야 하면 strdup 등으로 복사본을 만들어 사용 // -> 연속된
+            구분자(,,)는 빈 토큰을 만들지 않고 건너뛴다 (Python split과
+            다름)</span
+          >
+        </div>
+      </div>
+
+      <!-- 07. sscanf 사용 예제 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title"><em>sscanf</em>로 문자열 파싱하기</h2>
+        <p class="slide-sub">
+          Python의 정규식이나 split() 대신, C는 scanf 계열의 포맷 문자열로
+          문자열에서 값을 뽑아냅니다. 반환값은 반드시 확인해야 합니다.
+        </p>
+        <p class="code-label">필드 개수 체크와 폭 제한</p>
+        <div class="code-block">
+          char line[] = "3.14 hello 42"; double f; char word[32]; int n; int
+          matched = sscanf(line, "%lf %31s %d", &f, word, &n); if (matched != 3)
+          { fprintf(stderr, "파싱 실패: %d개 필드만 매칭됨\n", matched); }
+
+          <span class="cm"
+            >// %31s: word 버퍼(32바이트)를 넘지 않도록 폭을 지정 // 폭을 안
+            주면 strcpy처럼 오버플로우 위험이 그대로 생긴다</span
+          >
+        </div>
+      </div>
+
+      <!-- 08. errno / perror / strerror 에러 처리 패턴 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">errno / perror / <em>strerror</em></h2>
+        <p class="slide-sub">
+          Python은 예외가 콜스택을 타고 자동으로 전파됩니다. C는 그런 게 없으니,
+          실패 직후 errno를 확인하는 습관이 곧 예외 처리입니다.
+        </p>
+        <p class="code-label">표준 에러 처리 패턴</p>
+        <div class="code-block">
+          #include &lt;errno.h&gt; #include &lt;string.h&gt; FILE *fp =
+          fopen("no_such_file.txt", "r"); if (fp == NULL) {
+          <span class="cm"
+            >// perror: errno를 사람이 읽을 문구로 바로 stderr에 출력</span
+          >
+          perror("fopen");
+
+          <span class="cm"
+            >// strerror: 같은 메시지를 문자열로 받아 직접 다루고 싶을 때</span
+          >
+          fprintf(stderr, "errno=%d (%s)\n", errno, strerror(errno)); return 1;
+          }
+
+          <span class="cm"
+            >// 주의: errno는 함수 성공 시 자동으로 0으로 리셋되지 않는다 // ->
+            반환값으로 실패를 먼저 확인한 뒤에만 errno를 읽을 것</span
+          >
+        </div>
+      </div>
+
+      <!-- 09. 표준 라이브러리 훑기 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">표준 라이브러리 <em>훑기</em></h2>
+        <p class="slide-sub">
+          Python의 배터리 포함(batteries included) 철학과 달리, C 표준
+          라이브러리는 얇습니다. 이 세 헤더가 실무에서 가장 자주 쓰입니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">string.h</p>
+            <p class="card-title">문자열 · 메모리 조작</p>
+            <p class="card-desc">
+              strlen, strcmp, strcat, memcpy, memset 등. 대부분 널 종료('\0')
+              규약을 전제로 동작합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">stdlib.h</p>
+            <p class="card-title">메모리 할당 · 형변환 · 정렬</p>
+            <p class="card-desc">
+              malloc/free, atoi/strtol, qsort, exit 등. atoi는 에러를 알려주지
+              않으니 strtol을 더 선호합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">ctype.h</p>
+            <p class="card-title">문자 분류 · 변환</p>
+            <p class="card-desc">
+              isalpha, isdigit, isspace, tolower 등. int로 캐스팅된 unsigned
+              char를 넘겨야 안전합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. 단어 빈도수 세기 실습 미리보기 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">실습 미리보기: <em>단어 빈도수</em> 세기</h2>
+        <p class="slide-sub">
+          파일을 한 줄씩 읽고, strtok으로 단어를 분리하고, 소문자로 정규화한 뒤
+          테이블에 누적합니다. Python의 Counter(text.split())를 손수 구현하는
+          셈입니다.
+        </p>
+        <p class="code-label">핵심 루프 스케치</p>
+        <div class="code-block">
+          FILE *fp = fopen(argv[1], "r"); if (!fp) { perror("fopen"); return 1;
+          } char line[256]; while (fgets(line, sizeof line, fp)) { char *tok =
+          strtok(line, " \t\n.,!?"); while (tok) { for (char *p = tok; *p; p++)
+          *p = (char)tolower((unsigned char)*p); count_word(tok);
+          <span class="cm">// 배열/해시 테이블에 빈도 누적</span>
+          tok = strtok(NULL, " \t\n.,!?"); } } fclose(fp); print_top_words();
+
+          <span class="cm"
+            >// count_word 구현 선택지: struct { char word[32]; int count; }
+            배열을 // 선형 탐색하거나, 직접 해시 테이블을 만들어 조회 비용을
+            낮출 수 있다</span
+          >
+        </div>
+      </div>
+
+      <!-- 11. 흔한 실수 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">흔한 <em>실수</em></h2>
+        <p class="slide-sub">
+          Python에서는 런타임 예외가 즉시 알려주지만, C에서는 조용히 잘못된
+          메모리를 건드리고 넘어갈 수 있습니다.
+        </p>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>strcpy로 버퍼 오버플로우</strong>
+              <span
+                >목적지 크기 확인 없이 strcpy(dest, src)를 호출하면 스택/힙이
+                손상되고, 크래시나 보안 취약점으로 이어질 수 있다. snprintf나
+                크기를 명시하는 복사 패턴으로 대체할 것.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>strtok의 재진입 문제</strong>
+              <span
+                >strtok은 내부 static 상태를 공유하므로, 중첩 호출(다른 함수
+                안에서 strtok을 또 호출)이나 멀티스레드 환경에서 동시에 쓰면
+                상태가 서로 꼬인다. POSIX의 strtok_r로 대체하는 것이
+                안전하다.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>fopen 실패 체크 생략</strong>
+              <span
+                >NULL 체크 없이 곧장 fread/fwrite를 호출하면 NULL 포인터
+                역참조로 세그폴트가 난다. 반환값은 예외처럼 자동으로 알려주지
+                않으므로 항상 그 자리에서 확인해야 한다.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 마무리 요약 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">5주차 · 파일 입출력</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주 <em>정리</em></h2>
+        <p class="slide-sub">다음으로 넘어가기 전에 스스로 확인해보세요.</p>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ fopen 실패를 NULL 체크로 잡아내는 패턴을 설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ 텍스트 모드와 바이너리 모드의 차이, 구조체 덤프의 이식성 문제를
+              설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ strcpy가 왜 위험하고 strncpy도 왜 완벽하지 않은지 설명할 수
+              있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ strtok이 원본을 파괴하고 static 상태를 공유한다는 점을 설명할 수
+              있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ errno/perror/strerror를 이용한 표준 에러 처리 관례를 설명할 수
+              있나요?
+            </div>
+            <p class="checkin-hint">
+              다음 주(6주차)는 gdb와 sanitizer로 Undefined Behavior를 직접 찾아
+              고칩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 12</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>

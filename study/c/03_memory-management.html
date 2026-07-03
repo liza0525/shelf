@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C 3주차 · 메모리 관리</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 12</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="1">
+        <p class="eyebrow">3주차 · 메모리 관리</p>
+        <div class="rule"></div>
+        <h1 class="slide-title"><em>메모리</em> 관리</h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 프로세스 메모리 레이아웃 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">Process Memory Layout</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">프로세스는 <em>다섯 구역</em>으로 나뉜다</h1>
+        <p class="slide-sub">
+          Python 인터프리터가 알아서 굴리던 메모리를, C에서는 각 구역의 역할을 알고 직접 다뤄야 합니다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">낮은 주소</p>
+            <p class="tl-title">Text</p>
+            <p class="tl-desc">컴파일된 코드(기계어). 읽기 전용</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">&nbsp;</p>
+            <p class="tl-title">Data</p>
+            <p class="tl-desc">초기화된 전역/정적 변수</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">&nbsp;</p>
+            <p class="tl-title">BSS</p>
+            <p class="tl-desc">초기화 안 된 전역/정적 변수 (0으로 채워짐)</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">오늘 배울 곳</p>
+            <p class="tl-title">Heap</p>
+            <p class="tl-desc">malloc으로 할당. 낮은 주소 → 높은 주소로 성장</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">높은 주소</p>
+            <p class="tl-title">Stack</p>
+            <p class="tl-desc">함수 호출 프레임, 지역 변수. 높은 → 낮은 주소로 성장</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. 스택 vs 힙 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">Stack vs Heap</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">해제를 <em>누가</em> 책임지는가</h1>
+        <p class="slide-sub">
+          Python의 모든 객체는 사실 힙에 있고, 참조 카운트/GC가 해제 시점을 알아서 숨겨줍니다.
+          C는 스택은 자동, 힙은 수동 — 이 경계를 항상 의식해야 합니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col good">
+            <p class="col-label">스택 — 자동 해제</p>
+            <ul>
+              <li>함수 리턴 시 프레임과 함께 자동 소멸</li>
+              <li>할당/해제가 매우 빠름 (포인터 이동)</li>
+              <li>크기를 컴파일 타임에 알아야 함</li>
+              <li>지역 변수, 함수 인자가 여기 위치</li>
+            </ul>
+          </div>
+          <div class="goal-col bad">
+            <p class="col-label">힙 — 수동 해제</p>
+            <ul>
+              <li>malloc/free를 직접 짝지어야 함</li>
+              <li>런타임에 크기를 결정할 수 있음</li>
+              <li>함수를 벗어나도 살아있음</li>
+              <li>안 지우면 누수, 두 번 지우면 크래시</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04. malloc / calloc -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">malloc & calloc</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">할당은 <em>실패할 수 있다</em></h1>
+        <p class="slide-sub">
+          malloc/calloc은 실패하면 NULL을 반환합니다. Python의 리스트/딕셔너리는 메모리가 없으면
+          예외를 던지지만, C는 아무 신호 없이 NULL만 돌려줄 뿐입니다.
+        </p>
+        <div class="code-block">int *arr = malloc(<span class="cm">/* 개수 */</span> 10 * sizeof(int));
+<span class="cm">// 반환값을 반드시 체크한다</span>
+if (arr == NULL) {
+    fprintf(stderr, "malloc 실패\n");
+    exit(EXIT_FAILURE);
+}
+
+<span class="cm">// calloc은 개수와 원소 크기를 따로 받고, 0으로 초기화까지 해준다</span>
+int *zeros = calloc(10, sizeof(int));
+if (zeros == NULL) {
+    fprintf(stderr, "calloc 실패\n");
+    exit(EXIT_FAILURE);
+}
+<span class="cm">// zeros[0] ~ zeros[9]는 모두 0이 보장됨 (malloc은 보장 안 함!)</span></div>
+      </div>
+
+      <!-- 05. realloc / free -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">realloc & free</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">realloc은 <em>새 주소</em>를 줄 수 있다</h1>
+        <p class="slide-sub">
+          realloc은 확장이 불가능하면 새 블록을 잡고 내용을 복사한 뒤 원본을 해제합니다.
+          그래서 반환값을 임시 변수로 받아야 안전합니다.
+        </p>
+        <div class="code-block">int *arr = malloc(4 * sizeof(int));
+if (arr == NULL) exit(EXIT_FAILURE);
+
+<span class="cm">// 잘못된 예: 실패하면 arr 자체가 NULL로 덮여 원본 주소를 잃는다</span>
+<span class="cm">// arr = realloc(arr, 8 * sizeof(int));   // 절대 이렇게 쓰지 말 것</span>
+
+<span class="cm">// 올바른 예: 임시 포인터로 받아서 성공 여부를 먼저 확인</span>
+int *tmp = realloc(arr, 8 * sizeof(int));
+if (tmp == NULL) {
+    fprintf(stderr, "realloc 실패, 기존 arr은 아직 유효함\n");
+    free(arr);
+    exit(EXIT_FAILURE);
+}
+arr = tmp;
+
+free(arr);
+arr = NULL;   <span class="cm">// free 직후 관용적으로 NULL 대입</span></div>
+      </div>
+
+      <!-- 06. NULL 체크 안 하면 생기는 문제 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">Skip the NULL Check</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">체크를 <em>생략</em>하면 벌어지는 일</h1>
+        <p class="slide-sub">
+          Python에서 익숙한 "에러는 예외로 날아온다"는 가정이 C에는 없습니다.
+          NULL 포인터를 그냥 역참조하면 세그폴트로 프로세스가 즉사합니다.
+        </p>
+        <div class="code-block"><span class="cm">// 메모리가 부족하거나 요청 크기가 비정상적으로 큰 상황이라고 가정</span>
+int *huge = malloc((size_t)-1);   <span class="cm">// 사실상 항상 실패</span>
+
+huge[0] = 42;   <span class="cm">// NULL 역참조 → Segmentation fault (core dumped)</span>
+
+<span class="cm">// gdb/valgrind 없이 크래시 지점만 봐서는 원인 파악이 어렵다</span>
+<span class="cm">// 반환값 체크 한 줄이면 막을 수 있었던 크래시</span></div>
+        <p class="code-label">핵심</p>
+        <p class="slide-note">malloc 계열 함수는 항상 실패 가능성을 전제로 코드를 짜야 합니다.</p>
+      </div>
+
+      <!-- 07. double free / use-after-free -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">Double Free & Use-After-Free</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">지워진 메모리를 <em>다시 만지면</em></h1>
+        <p class="slide-sub">
+          free는 메모리를 "반납 가능" 상태로 표시할 뿐, 포인터 값 자체는 그대로 남습니다.
+          이 포인터를 계속 쓰거나 두 번 해제하면 정의되지 않은 동작(UB)이 시작됩니다.
+        </p>
+        <div class="code-block">int *p = malloc(sizeof(int));
+*p = 10;
+
+free(p);
+free(p);          <span class="cm">// 버그: double free — 힙 메타데이터 손상, 크래시 가능</span>
+
+int *q = malloc(sizeof(int));
+free(q);
+printf("%d\n", *q); <span class="cm">// 버그: use-after-free — 이미 반납된 메모리를 읽음</span>
+*q = 99;             <span class="cm">// 다른 malloc이 재사용 중인 메모리를 덮어쓸 수도 있음</span></div>
+      </div>
+
+      <!-- 08. dangling pointer -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">Dangling Pointer</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">함수가 끝나면 <em>가리킬 곳이 없다</em></h1>
+        <p class="slide-sub">
+          Python에서 클로저가 변수를 캡처하듯 함수 밖으로 참조를 들고 나가는 건 흔한 일이지만,
+          C에서 스택 지역 변수의 주소를 반환하면 그 메모리는 이미 회수된 상태입니다.
+        </p>
+        <div class="code-block">int *make_dangling(void) {
+    int local = 42;
+    return &local;   <span class="cm">// 버그: local은 스택 변수, 함수 종료와 동시에 소멸</span>
+}
+
+int main(void) {
+    int *p = make_dangling();
+    printf("%d\n", *p);   <span class="cm">// dangling pointer 역참조 — 값이 우연히 맞을 수도, 크래시일 수도</span>
+
+    <span class="cm">// 올바른 방법: 힙에 할당해서 소유권을 호출자에게 넘긴다</span>
+    <span class="cm">// int *heap_val = malloc(sizeof(int)); *heap_val = 42; return heap_val;</span>
+}</div>
+      </div>
+
+      <!-- 09. valgrind -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">valgrind</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">눈에 안 보이는 버그를 <em>잡아내기</em></h1>
+        <p class="slide-sub">
+          컴파일은 되고 실행도 되지만 조용히 메모리를 새고 있는 코드 — valgrind는 이런 문제를
+          실행 중에 추적해서 리포트로 보여줍니다.
+        </p>
+        <div class="code-block">$ gcc -g -O0 -o prog prog.c
+$ valgrind --leak-check=full --track-origins=yes ./prog
+
+<span class="cm">==12345== HEAP SUMMARY:</span>
+<span class="cm">==12345==     in use at exit: 40 bytes in 1 blocks</span>
+<span class="cm">==12345==   total heap usage: 3 allocs, 2 frees, 1,064 bytes allocated</span>
+<span class="cm">==12345==</span>
+<span class="cm">==12345== 40 bytes in 1 blocks are definitely lost in loss record 1 of 1</span>
+<span class="cm">==12345==    at 0x4C3...: malloc (vg_replace_malloc.c:299)</span>
+<span class="cm">==12345==    by 0x1091A9: main (prog.c:14)</span>
+<span class="cm">==12345==</span>
+<span class="cm">==12345== LEAK SUMMARY:</span>
+<span class="cm">==12345==    definitely lost: 40 bytes in 1 blocks</span></div>
+        <p class="code-label">읽는 법</p>
+        <p class="slide-note">"definitely lost"는 free를 잊은 것, 스택 트레이스가 어느 malloc인지 정확히 짚어줍니다.</p>
+      </div>
+
+      <!-- 10. 실습 미리보기 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">실습 미리보기</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">가변 크기 <em>동적 배열</em> 만들기</h1>
+        <p class="slide-sub">
+          Python의 list.append()가 내부적으로 하는 일을 직접 구현합니다. 용량이 꽉 차면 realloc으로
+          두 배 늘리고, 다 쓰면 확실히 free합니다.
+        </p>
+        <div class="code-block">typedef struct {
+    int *data;
+    size_t size;      <span class="cm">// 현재 원소 개수</span>
+    size_t capacity;   <span class="cm">// 할당된 용량</span>
+} IntVec;
+
+void vec_push(IntVec *v, int value) {
+    if (v->size == v->capacity) {
+        size_t new_cap = v->capacity == 0 ? 4 : v->capacity * 2;
+        int *tmp = realloc(v->data, new_cap * sizeof(int));
+        if (tmp == NULL) exit(EXIT_FAILURE);
+        v->data = tmp;
+        v->capacity = new_cap;
+    }
+    v->data[v->size++] = value;
+}
+
+void vec_free(IntVec *v) {
+    free(v->data);
+    v->data = NULL;
+    v->size = v->capacity = 0;
+}
+
+<span class="cm">// $ valgrind --leak-check=full ./vec_demo</span>
+<span class="cm">// "All heap blocks were freed -- no leaks are possible" 가 목표</span></div>
+      </div>
+
+      <!-- 11. 흔한 실수 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">Common Pitfalls</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">자주 <em>걸려 넘어지는</em> 지점들</h1>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>free 후 포인터를 그대로 쓴다</strong>
+              <span>free(p)는 p의 값을 바꾸지 않는다. free 직후 p = NULL로 초기화하는 습관이 필요하다.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>realloc 반환값을 원본 포인터에 바로 덮어쓴다</strong>
+              <span>실패 시 NULL이 원본을 덮어써서 기존 메모리 주소를 영영 잃고 누수가 발생한다.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>sizeof 계산을 잘못한다</strong>
+              <span>malloc(sizeof(p)) vs malloc(sizeof(*p)) — 포인터 자체 크기와 가리키는 타입 크기를 혼동한다.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>같은 블록을 두 번 free한다</strong>
+              <span>구조체 안에 같은 포인터가 두 곳에서 참조될 때, 소유권을 누가 갖는지 명확히 하지 않으면 발생한다.</span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">05</span>
+            <div class="problem-content">
+              <strong>에러 경로에서 free를 빼먹는다</strong>
+              <span>malloc 여러 번 이후 중간에 실패해서 조기 반환할 때, 이미 할당된 블록들의 해제를 잊는다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 마무리 요약 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">Summary</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">이번 주 <em>기억할 것</em></h1>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">스택은 자동, 힙은 수동</div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">malloc/calloc/realloc은 항상 NULL 체크</div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">realloc은 임시 변수로 받고, free 후엔 포인터를 NULL로</div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">valgrind는 컴파일러가 못 잡는 런타임 메모리 버그의 안전망</div>
+          </div>
+        </div>
+        <p class="slide-note">다음 주: 구조체와 유니온으로 이 원칙들을 실제 자료구조에 적용합니다.</p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 12</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>
