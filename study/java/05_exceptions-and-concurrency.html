@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Java 5주차 · 예외 처리와 동시성 기초</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 13</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="1">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">예외 처리와 <em>동시성 기초</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 이번 주 목표 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주 <em>목표</em></h2>
+        <p class="slide-sub">
+          Python에는 없는 checked exception 개념과, GIL 없이 진짜로 병렬
+          실행되는 Java 스레드를 다룹니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Exception</p>
+            <p class="card-title">Checked vs Unchecked</p>
+            <p class="card-desc">
+              try-with-resources와 커스텀 예외 설계로 예외 계층을 의도대로
+              통제합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Thread</p>
+            <p class="card-title">진짜 병렬 실행</p>
+            <p class="card-desc">
+              Thread, Runnable, synchronized, volatile로 공유 자원을 안전하게
+              다룹니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Executor</p>
+            <p class="card-title">스레드 풀과 비동기 조합</p>
+            <p class="card-desc">
+              ExecutorService와 CompletableFuture로 여러 작업을 병렬로 실행하고
+              결과를 취합합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. Checked vs Unchecked 예외 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Checked vs <em>Unchecked</em></h2>
+        <p class="slide-sub">
+          Python의 예외는 전부 unchecked에 가깝습니다. Java는 "호출자가 반드시
+          처리해야 하는 예외"를 컴파일러가 강제한다는 점이 다릅니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Checked Exception</p>
+            <ul>
+              <li>Exception을 상속 (RuntimeException 제외)</li>
+              <li>메서드 시그니처에 throws로 명시해야 함</li>
+              <li>호출자가 catch 하거나 다시 throws 선언</li>
+              <li>예: IOException, SQLException</li>
+              <li>Python에는 대응 개념이 없음</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Unchecked Exception</p>
+            <ul>
+              <li>RuntimeException을 상속</li>
+              <li>throws 선언 없이도 던질 수 있음</li>
+              <li>컴파일러가 처리를 강제하지 않음</li>
+              <li>예: NullPointerException, IllegalArgumentException</li>
+              <li>Python의 예외와 동작 방식이 가장 비슷함</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04. try-with-resources -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">try-with-<em>resources</em></h2>
+        <p class="slide-sub">
+          AutoCloseable을 구현한 자원은 try() 괄호 안에서 선언하면 블록을 벗어날
+          때 자동으로 close()가 호출됩니다.
+        </p>
+        <p class="code-label">여러 리소스를 안전하게 정리하기</p>
+        <div class="code-block">
+          public class ResourceExample { public static void main(String[] args)
+          {
+          <span class="cm">// 세미콜론으로 여러 리소스를 나열 가능</span>
+          try (BufferedReader br = new BufferedReader(new
+          FileReader("data.txt")); FileWriter fw = new FileWriter("out.txt")) {
+          String line = br.readLine(); fw.write(line); } catch (IOException e) {
+          <span class="cm"
+            >// close()는 선언의 역순으로 자동 호출됨 (fw -> br)</span
+          >
+          System.err.println("파일 처리 실패: " + e.getMessage()); } } }
+        </div>
+        <p class="slide-note">
+          Python의 with open(...) as f: 와 목적은 같지만, 리소스를 여러 개
+          나열하고 예외를 명시적으로 catch해야 한다는 점이 다릅니다.
+        </p>
+      </div>
+
+      <!-- 05. 커스텀 예외 설계 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">커스텀 예외 <em>설계</em></h2>
+        <p class="slide-sub">
+          호출자가 복구 가능한 상황만 checked로, 나머지는 프로그래밍 오류로 보고
+          unchecked(RuntimeException)로 설계하는 것이 관례입니다.
+        </p>
+        <p class="code-label">도메인 의미를 담은 checked 예외</p>
+        <div class="code-block">
+          public class InsufficientBalanceException extends Exception { private
+          final BigDecimal shortage; public
+          InsufficientBalanceException(BigDecimal shortage) { super("잔액이 " +
+          shortage + "원 부족합니다."); this.shortage = shortage; } public
+          BigDecimal getShortage() { return shortage; } }
+
+          <span class="cm"
+            >// throws로 계약을 명시하면 호출부가 반드시 처리하게 됨</span
+          >
+          public void withdraw(BigDecimal amount) throws
+          InsufficientBalanceException { if (amount.compareTo(balance) > 0) {
+          throw new InsufficientBalanceException(amount.subtract(balance)); }
+          balance = balance.subtract(amount); }
+        </div>
+      </div>
+
+      <!-- 06. Thread / Runnable 기초 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Thread와 <em>Runnable</em></h2>
+        <p class="slide-sub">
+          Thread를 상속하는 방식보다 Runnable을 구현하는 방식이 권장됩니다. 상속
+          슬롯을 다른 용도로 남겨둘 수 있기 때문입니다.
+        </p>
+        <p class="code-label">start()는 새 스레드, run()은 그냥 메서드 호출</p>
+        <div class="code-block">
+          <span class="cm">// 1) Thread 상속 방식</span>
+          class DownloadThread extends Thread { @Override public void run() {
+          System.out.println("다운로드 중... " +
+          Thread.currentThread().getName()); } }
+
+          <span class="cm">// 2) Runnable 구현 방식 (더 권장됨)</span>
+          Runnable task = () -> { System.out.println("작업 실행: " +
+          Thread.currentThread().getName()); }; Thread t1 = new
+          DownloadThread(); Thread t2 = new Thread(task); t1.start();
+          <span class="cm"
+            >// run()이 아니라 start()를 호출해야 새 스레드가 생성됨</span
+          >
+          t2.start(); t1.join();
+          <span class="cm">// 스레드가 끝날 때까지 대기</span> t2.join();
+        </div>
+      </div>
+
+      <!-- 07. synchronized / volatile -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">synchronized와 <em>volatile</em></h2>
+        <p class="slide-sub">
+          synchronized는 상호 배제(한 번에 한 스레드만 진입)와 가시성을 모두
+          보장하고, volatile은 가시성만 보장합니다. 용도가 다릅니다.
+        </p>
+        <p class="code-label">데이터 레이스 예방</p>
+        <div class="code-block">
+          class Counter { private int count = 0;
+
+          <span class="cm"
+            >// count++는 read-modify-write 3단계라 원자적이지 않음 → 값 유실
+            가능</span
+          >
+          public void incrementUnsafe() { count++; }
+
+          <span class="cm"
+            >// synchronized: 한 번에 한 스레드만 이 메서드에 진입 (모니터
+            락)</span
+          >
+          public synchronized void incrementSafe() { count++; } } class
+          FlagHolder {
+          <span class="cm"
+            >// volatile: 모든 스레드가 항상 메인 메모리에서 최신 값을 읽도록
+            보장</span
+          >
+          <span class="cm"
+            >// (가시성만 보장, 복합 연산의 원자성은 보장하지 않음)</span
+          >
+          private volatile boolean running = true; public void stop() { running
+          = false; } }
+        </div>
+      </div>
+
+      <!-- 08. Python GIL vs Java 진짜 병렬 실행 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">GIL이 <em>없다면</em></h2>
+        <p class="slide-sub">
+          Python 스레드는 CPU-bound 작업에서 사실상 순차 실행됩니다. Java
+          스레드는 코어마다 진짜 병렬로 돌아갑니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Python</p>
+            <ul>
+              <li>
+                GIL(Global Interpreter Lock) 때문에 한 번에 바이트코드 1개만
+                실행
+              </li>
+              <li>스레드를 여러 개 만들어도 CPU-bound 코드는 병렬 아님</li>
+              <li>진짜 병렬 처리를 하려면 multiprocessing 필요</li>
+              <li>GIL 덕분에 인터프리터 내부 상태는 항상 안전</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Java</p>
+            <ul>
+              <li>스레드 하나 = 진짜 OS 스레드, 멀티코어를 그대로 활용</li>
+              <li>전역 락(GIL) 자체가 없음</li>
+              <li>
+                대신 개발자가 synchronized/volatile/Lock으로 직접 동기화해야 함
+              </li>
+              <li>데이터 레이스는 컴파일러가 안 막아주고 런타임에만 드러남</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 09. ExecutorService 스레드 풀 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">ExecutorService <em>스레드 풀</em></h2>
+        <p class="slide-sub">
+          new Thread()를 매번 만드는 대신, 재사용 가능한 스레드 풀에 작업을
+          제출합니다. 생성/소멸 비용을 줄이고 동시 실행 개수도 제어할 수
+          있습니다.
+        </p>
+        <p class="code-label">invokeAll로 여러 작업 동시 실행</p>
+        <div class="code-block">
+          ExecutorService pool = Executors.newFixedThreadPool(4);
+          List&lt;Callable&lt;String&gt;&gt; tasks = List.of( () -&gt;
+          fetchUrl("https://a.example.com"), () -&gt;
+          fetchUrl("https://b.example.com"), () -&gt;
+          fetchUrl("https://c.example.com") );
+
+          <span class="cm"
+            >// invokeAll: 모든 작업을 제출하고 전부 끝날 때까지 블록</span
+          >
+          List&lt;Future&lt;String&gt;&gt; results = pool.invokeAll(tasks); for
+          (Future&lt;String&gt; f : results) { System.out.println(f.get());
+          <span class="cm">// 결과 또는 예외 확인</span> } pool.shutdown();
+          <span class="cm"
+            >// 새 작업은 거부, 기존 작업은 계속 진행 후 종료</span
+          >
+        </div>
+      </div>
+
+      <!-- 10. CompletableFuture 조합 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">CompletableFuture <em>조합</em></h2>
+        <p class="slide-sub">
+          Future는 결과를 블로킹으로만 꺼낼 수 있지만, CompletableFuture는
+          콜백을 체이닝해서 비동기 파이프라인을 구성할 수 있습니다.
+        </p>
+        <p class="code-label">thenCombine / thenAccept / exceptionally</p>
+        <div class="code-block">
+          CompletableFuture&lt;String&gt; userFuture =
+          CompletableFuture.supplyAsync(() -&gt; fetchUser(id));
+          CompletableFuture&lt;String&gt; orderFuture =
+          CompletableFuture.supplyAsync(() -&gt; fetchOrders(id));
+
+          <span class="cm"
+            >// 두 비동기 작업이 모두 끝나면 결과를 합쳐 다음 단계로</span
+          >
+          CompletableFuture&lt;String&gt; combined = userFuture.thenCombine(
+          orderFuture, (user, orders) -&gt; user + " - " + orders );
+          combined.thenAccept(System.out::println) .exceptionally(ex -&gt; {
+          System.err.println("실패: " + ex.getMessage()); return null; });
+          combined.join(); <span class="cm">// 필요할 때만 결과를 기다림</span>
+        </div>
+        <p class="slide-note">
+          Python asyncio.gather와 개념은 비슷하지만, CompletableFuture는 스레드
+          풀 위에서 진짜 병렬로 실행됩니다.
+        </p>
+      </div>
+
+      <!-- 11. 실습 미리보기: 멀티스레드 다운로더 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">실습 미리보기: <em>멀티스레드 다운로더</em></h2>
+        <p class="slide-sub">
+          여러 URL을 동시에 호출해 결과를 취합하는 프로그램으로 이번 주 개념을
+          한 번에 조합합니다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 1</p>
+            <p class="tl-title">URL 목록 준비</p>
+            <p class="tl-desc">호출할 URL들을 List로 정리</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 2</p>
+            <p class="tl-title">ExecutorService에 제출</p>
+            <p class="tl-desc">
+              각 URL 호출을 Callable로 감싸 스레드 풀에 제출
+            </p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 3</p>
+            <p class="tl-title">비동기로 결과 수집</p>
+            <p class="tl-desc">Future.get() 또는 CompletableFuture 체이닝</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 4</p>
+            <p class="tl-title">전체 결과 취합</p>
+            <p class="tl-desc">성공/실패를 구분해서 최종 리포트 생성</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 흔한 실수 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">흔한 <em>실수</em></h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <p class="problem-num">01</p>
+            <div class="problem-content">
+              <strong>Checked Exception을 조용히 삼키기</strong>
+              <span
+                >catch (Exception e) {} 처럼 빈 블록으로 무시하면 실패가 흔적도
+                없이 사라집니다. 최소한 로깅이라도 남기세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <p class="problem-num">02</p>
+            <div class="problem-content">
+              <strong>데드락(deadlock)</strong>
+              <span
+                >두 스레드가 두 개의 락을 서로 다른 순서로 획득하려 하면
+                상대방이 락을 놓기를 영원히 기다리며 멈춥니다.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <p class="problem-num">03</p>
+            <div class="problem-content">
+              <strong>공유 변수에 synchronized/volatile 빠뜨리기</strong>
+              <span
+                >필드 하나만 동기화를 빼먹어도 데이터 레이스가 발생합니다. 특히
+                count++ 같은 read-modify-write 연산은 반드시 확인하세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <p class="problem-num">04</p>
+            <div class="problem-content">
+              <strong>ExecutorService.shutdown()을 호출하지 않기</strong>
+              <span
+                >풀을 닫지 않으면 스레드가 계속 살아있어 JVM 프로세스가 종료되지
+                않는 경우가 생깁니다.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. 마무리 요약 -->
+      <div class="slide" data-index="13">
+        <p class="eyebrow">5주차 · 예외 처리와 동시성</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주 <em>정리</em></h2>
+        <p class="slide-sub">다음으로 넘어가기 전에 스스로 확인해보세요.</p>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ Checked와 Unchecked 예외의 차이를 설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ try-with-resources가 언제 close()를 호출하는지 설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ synchronized와 volatile의 보장 범위 차이를 설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ Python GIL과 Java 스레드의 병렬성 차이를 설명할 수 있나요?
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">
+              ✓ ExecutorService와 CompletableFuture를 언제 쓰는지 설명할 수
+              있나요?
+            </div>
+            <p class="checkin-hint">
+              다음 주(6~7주차)는 Spring Boot로 게시판 CRUD REST API를 완성하는
+              실전 프로젝트입니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 13</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>

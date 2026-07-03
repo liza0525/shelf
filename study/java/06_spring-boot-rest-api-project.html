@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Java 6~7주차 · Spring Boot REST API</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 15</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">6~7주차 · 실전 프로젝트</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">Spring Boot로 <em>REST API 만들기</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 이번 챕터 목표 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">OVERVIEW</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">
+          1~5주차에서 배운 걸<br /><em>전부</em> 씁니다
+        </h2>
+        <p class="slide-sub">
+          타입 시스템, OOP, 제네릭/컬렉션, 스트림, 예외/동시성 — 지금까지 배운
+          Java가 하나의 실전 REST API로 합쳐집니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Framework</p>
+            <p class="card-title">Spring Boot 3.x</p>
+            <p class="card-desc">
+              DI 컨테이너 위에서 계층 구조를 갖춘 서버 애플리케이션을 만듭니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Persistence</p>
+            <p class="card-title">JPA / Hibernate</p>
+            <p class="card-desc">
+              엔티티 클래스만으로 SQL 없이 DB와 연동합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Capstone</p>
+            <p class="card-title">board CRUD 재구현</p>
+            <p class="card-desc">
+              Python으로 만들었던 그 게시판 API를 Java로 다시 만들고 테스트까지
+              붙입니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. Spring Boot DI 개념 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">DEPENDENCY INJECTION</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">객체를 <em>직접 만들지</em> 않는다</h2>
+        <p class="slide-sub">
+          Spring 컨테이너가 <code>@Component</code> 계열 애노테이션이 붙은
+          클래스를 인스턴스화하고, 필요한 곳에 생성자로 주입합니다. FastAPI의
+          <code>Depends()</code>와 비슷한 발상이지만 범위가 애플리케이션
+          전체입니다.
+        </p>
+        <p class="code-label">BOARDSERVICE.JAVA</p>
+        <div class="code-block">
+          <span class="cm"
+            >// @Service: 이 클래스는 Spring이 관리하는 빈(Bean)이다</span
+          >
+          @Service public class BoardService { private final BoardRepository
+          boardRepository;
+
+          <span class="cm"
+            >// 생성자가 하나뿐이면 @Autowired 생략 가능 (생성자 주입 권장
+            방식)</span
+          >
+          public BoardService(BoardRepository boardRepository) {
+          this.boardRepository = boardRepository; } public Board findById(Long
+          id) { return boardRepository.findById(id) .orElseThrow(() -> new
+          BoardNotFoundException(id)); } }
+        </div>
+      </div>
+
+      <!-- 04. 계층 구조 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">LAYERED ARCHITECTURE</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Controller → Service → <em>Repository</em></h2>
+        <p class="slide-sub">
+          각 계층은 애노테이션으로 역할이 선언되고, 책임이 분리됩니다. Django의
+          view/serializer/model, FastAPI의 router/service/ORM 구조와 대응됩니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">@RestController</p>
+            <p class="card-title">HTTP 요청 처리</p>
+            <p class="card-desc">
+              URL과 HTTP 메서드를 매핑하고, 요청/응답 바디를 JSON으로 자동
+              변환합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">@Service</p>
+            <p class="card-title">비즈니스 로직</p>
+            <p class="card-desc">
+              검증, 트랜잭션, 도메인 규칙을 담당하며 Controller와 Repository
+              사이를 중개합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">@Repository</p>
+            <p class="card-title">데이터 접근</p>
+            <p class="card-desc">
+              DB CRUD를 담당하는 계층. JPA에서는 인터페이스 선언만으로 구현체가
+              자동 생성됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05. JPA 엔티티 정의 -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">JPA ENTITY</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">클래스가 곧 <em>테이블</em>이 된다</h2>
+        <p class="slide-sub">
+          <code>@Entity</code>를 붙이면 Hibernate가 필드를 컬럼에 매핑합니다.
+          Django ORM의 Model 클래스, SQLAlchemy의 declarative model과 개념이
+          거의 같습니다.
+        </p>
+        <p class="code-label">BOARD.JAVA</p>
+        <div class="code-block">
+          @Entity @Table(name = "boards") public class Board { @Id
+          @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
+          @Column(nullable = false, length = 200) private String title;
+          @Column(columnDefinition = "TEXT") private String content;
+          @CreationTimestamp private LocalDateTime createdAt; protected Board()
+          {} <span class="cm">// JPA는 기본 생성자가 필요함</span>
+
+          public Board(String title, String content) { this.title = title;
+          this.content = content; }
+
+          <span class="cm"
+            >// getter만 공개, setter는 도메인 메서드로 대체 (필드 무분별 변경
+            방지)</span
+          >
+          public Long getId() { return id; } public String getTitle() { return
+          title; } }
+        </div>
+      </div>
+
+      <!-- 06. board CRUD 엔드포인트 설계 -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">REST ENDPOINTS</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">게시판 CRUD <em>엔드포인트 설계</em></h2>
+        <p class="slide-sub">
+          <code>JpaRepository</code>를 상속하면
+          <code>save</code
+          >/<code>findById</code>/<code>findAll</code>/<code>deleteById</code>가
+          공짜로 생깁니다. Controller는 이걸 조합해 HTTP 메서드에 매핑합니다.
+        </p>
+        <div class="grid-2">
+          <div class="card">
+            <p class="card-label">GET /boards</p>
+            <p class="card-title">목록 조회</p>
+            <p class="card-desc">
+              <code>boardRepository.findAll()</code>로 전체 목록을 페이지네이션
+              없이 우선 반환합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">GET /boards/{id}</p>
+            <p class="card-title">단건 조회</p>
+            <p class="card-desc">
+              존재하지 않으면 <code>BoardNotFoundException</code>을 던져 404로
+              응답합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">POST /boards</p>
+            <p class="card-title">생성</p>
+            <p class="card-desc">
+              <code>@RequestBody</code>로 JSON을 DTO로 받아
+              <code>@Valid</code>로 먼저 검증합니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">PUT / DELETE /boards/{id}</p>
+            <p class="card-title">수정 · 삭제</p>
+            <p class="card-desc">
+              수정은 영속 상태 엔티티의 필드를 바꿔 더티 체킹으로 자동
+              UPDATE됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 07. Controller 구현 -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">CONTROLLER</p>
+        <div class="rule"></div>
+        <h2 class="slide-title"><em>@RestController</em>로 라우팅하기</h2>
+        <p class="slide-sub">
+          클래스 레벨 <code>@RequestMapping</code>으로 공통 경로를 잡고,
+          메서드마다 <code>@GetMapping</code>/<code>@PostMapping</code> 등으로
+          세부 경로를 붙입니다.
+        </p>
+        <p class="code-label">BOARDCONTROLLER.JAVA</p>
+        <div class="code-block">
+          @RestController @RequestMapping("/boards") public class
+          BoardController { private final BoardService boardService; public
+          BoardController(BoardService boardService) { this.boardService =
+          boardService; } @GetMapping public List&lt;BoardResponse&gt; list() {
+          return boardService.findAll(); } @PostMapping
+          @ResponseStatus(HttpStatus.CREATED) public BoardResponse create(@Valid
+          @RequestBody BoardCreateRequest request) { return
+          boardService.create(request); } @DeleteMapping("/{id}")
+          @ResponseStatus(HttpStatus.NO_CONTENT) public void
+          delete(@PathVariable Long id) { boardService.delete(id); } }
+        </div>
+      </div>
+
+      <!-- 08. 예외 처리 패턴 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">EXCEPTION HANDLING</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">
+          계층마다 <em>throw</em>, 한 곳에서 <em>catch</em>
+        </h2>
+        <p class="slide-sub">
+          Service에서는 도메인 예외만 던지고, 그걸 HTTP 응답으로 바꾸는 책임은
+          <code>@RestControllerAdvice</code> 한 곳에 모읍니다. FastAPI의
+          exception_handler와 같은 패턴입니다.
+        </p>
+        <p class="code-label">GLOBALEXCEPTIONHANDLER.JAVA</p>
+        <div class="code-block">
+          @RestControllerAdvice public class GlobalExceptionHandler {
+          @ExceptionHandler(BoardNotFoundException.class) public
+          ResponseEntity&lt;ErrorResponse&gt;
+          handleNotFound(BoardNotFoundException e) { ErrorResponse body = new
+          ErrorResponse("BOARD_NOT_FOUND", e.getMessage()); return
+          ResponseEntity.status(HttpStatus.NOT_FOUND).body(body); }
+          @ExceptionHandler(MethodArgumentNotValidException.class) public
+          ResponseEntity&lt;ErrorResponse&gt;
+          handleInvalid(MethodArgumentNotValidException e) {
+          <span class="cm"
+            >// @Valid 검증 실패 시 스프링이 자동으로 던지는 예외</span
+          >
+          String message =
+          e.getBindingResult().getFieldError().getDefaultMessage(); return
+          ResponseEntity.badRequest().body(new ErrorResponse("INVALID_INPUT",
+          message)); } }
+        </div>
+      </div>
+
+      <!-- 09. @Valid 검증 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">VALIDATION</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">DTO에 <em>제약 조건</em>을 선언한다</h2>
+        <p class="slide-sub">
+          bean-validation 애노테이션을 DTO 필드에 붙이고 컨트롤러 파라미터에
+          <code>@Valid</code>만 추가하면 검증이 요청 처리 이전에 자동으로
+          실행됩니다. Pydantic의 Field 제약과 동일한 발상입니다.
+        </p>
+        <p class="code-label">BOARDCREATEREQUEST.JAVA</p>
+        <div class="code-block">
+          public record BoardCreateRequest( @NotBlank(message = "제목은 비어
+          있을 수 없습니다") @Size(max = 200, message = "제목은 200자를 넘을 수
+          없습니다") String title, @NotBlank(message = "내용은 비어 있을 수
+          없습니다") String content ) {}
+
+          <span class="cm"
+            >// 컨트롤러에서는 이렇게만 쓰면 검증이 먼저 실행됨</span
+          >
+          <span class="cm"
+            >// public BoardResponse create(@Valid @RequestBody
+            BoardCreateRequest request)</span
+          >
+        </div>
+      </div>
+
+      <!-- 10. Python 대비 비교 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">VS PYTHON</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">FastAPI/Django 대비 <em>무엇이 다른가</em></h2>
+        <p class="slide-sub">
+          개념은 대부분 대응되지만, Java 쪽은 컴파일 타임에 더 많은 걸
+          강제합니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Python (FastAPI/Django)</p>
+            <ul>
+              <li>Depends()로 함수 단위 의존성 주입</li>
+              <li>데코레이터 기반 라우팅, 런타임에 등록</li>
+              <li>타입힌트는 선택, 런타임 강제 아님</li>
+              <li>Pydantic으로 요청 검증</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Java (Spring Boot)</p>
+            <ul>
+              <li>IoC 컨테이너가 빈 생명주기 전체를 관리</li>
+              <li>애노테이션 기반 라우팅, 컴파일 타임 타입 체크</li>
+              <li>생성자 시그니처가 곧 의존성 계약</li>
+              <li>bean-validation으로 요청 검증</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. JUnit5 + Mockito 테스트 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">TESTING</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">JUnit 5 + <em>Mockito</em>로 단위 테스트</h2>
+        <p class="slide-sub">
+          Repository는 <code>@Mock</code>으로 가짜 객체를 만들고, Service만
+          실제로 실행해 비즈니스 로직만 검증합니다. pytest + unittest.mock
+          조합과 동일한 목적입니다.
+        </p>
+        <p class="code-label">BOARDSERVICETEST.JAVA</p>
+        <div class="code-block">
+          @ExtendWith(MockitoExtension.class) class BoardServiceTest { @Mock
+          private BoardRepository boardRepository; @InjectMocks private
+          BoardService boardService; @Test void
+          존재하지_않는_게시글을_조회하면_예외를_던진다() {
+          <span class="cm">// given</span>
+          given(boardRepository.findById(1L)).willReturn(Optional.empty());
+
+          <span class="cm">// when & then</span>
+          assertThrows(BoardNotFoundException.class, () ->
+          boardService.findById(1L)); } }
+        </div>
+      </div>
+
+      <!-- 12. 실습 과제 안내 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">EXERCISE</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">실습: 게시판 CRUD <em>완성하기</em></h2>
+        <p class="slide-sub">
+          Python으로 만들었던 board API를 그대로 스펙 삼아 Java/Spring Boot로
+          다시 구현합니다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 1</p>
+            <p class="tl-title">엔티티 & 레포지토리</p>
+            <p class="tl-desc">Board 엔티티, BoardRepository 작성</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 2</p>
+            <p class="tl-title">Service & Controller</p>
+            <p class="tl-desc">CRUD 4개 엔드포인트 구현</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 3</p>
+            <p class="tl-title">예외 & 검증</p>
+            <p class="tl-desc">GlobalExceptionHandler, @Valid 적용</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 4</p>
+            <p class="tl-title">테스트 작성</p>
+            <p class="tl-desc">Service 단위 테스트 3개 이상</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">STEP 5</p>
+            <p class="tl-title">동작 검증</p>
+            <p class="tl-desc">Postman/curl로 4개 엔드포인트 확인</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. curl로 동작 검증 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">MANUAL VERIFICATION</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">curl로 <em>직접 찔러보기</em></h2>
+        <p class="slide-sub">
+          자동화 테스트와 별개로, 실행 중인 서버에 실제 요청을 보내 응답을
+          눈으로 확인합니다. Postman 컬렉션으로 저장해두면 반복 검증이
+          편해집니다.
+        </p>
+        <p class="code-label">TERMINAL</p>
+        <div class="code-block">
+          <span class="cm"># 생성</span>
+          curl -X POST localhost:8080/boards \ -H "Content-Type:
+          application/json" \ -d '{"title": "첫 게시글", "content":
+          "본문입니다"}'
+
+          <span class="cm"># 목록 조회</span>
+          curl localhost:8080/boards
+
+          <span class="cm"
+            ># 존재하지 않는 ID 조회 → 404 + ErrorResponse 확인</span
+          >
+          curl -i localhost:8080/boards/9999
+
+          <span class="cm"># 빈 제목으로 생성 → 400 + 검증 메시지 확인</span>
+          curl -X POST localhost:8080/boards \ -H "Content-Type:
+          application/json" \ -d '{"title": "", "content": "본문"}'
+        </div>
+      </div>
+
+      <!-- 14. 체크인 -->
+      <div class="slide" data-index="13">
+        <p class="eyebrow">CHECK-IN</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">스스로 <em>점검</em>해보기</h2>
+        <p class="slide-sub">
+          아래 질문에 막힘없이 답할 수 있으면 이번 챕터는 통과입니다.
+        </p>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div class="checkin-main">✓</div>
+            <div>
+              <p class="checkin-main">
+                Controller/Service/Repository가 왜 분리되어야 하는지 설명할 수
+                있나요?
+              </p>
+              <p class="checkin-hint">
+                각 계층의 책임과, 테스트 시 어떤 계층을 mock 처리하는지 기준으로
+                답해보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">✓</div>
+            <div>
+              <p class="checkin-main">
+                @ExceptionHandler와 @Valid가 각각 어느 시점에 개입하나요?
+              </p>
+              <p class="checkin-hint">
+                요청 파이프라인에서 검증과 예외 변환이 실행되는 순서를
+                그려보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div class="checkin-main">✓</div>
+            <div>
+              <p class="checkin-main">
+                Mockito의 @Mock과 @InjectMocks는 각각 무슨 역할인가요?
+              </p>
+              <p class="checkin-hint">
+                unittest.mock의 Mock/patch와 대응시켜 설명해보세요.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 15. 마무리: 7주 전체 회고 -->
+      <div class="slide" data-index="14">
+        <p class="eyebrow">WRAP-UP</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">7주간의 <em>여정</em></h2>
+        <p class="slide-sub">
+          JVM 기초부터 실전 REST API까지 — Python에서 쌓은 감각을 Java의 타입
+          시스템과 프레임워크 관습 위에 그대로 옮겨왔습니다.
+        </p>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">1주</p>
+            <p class="tl-title">JVM & 빌드</p>
+            <p class="tl-desc">바이트코드, Maven/Gradle, 정적 타입</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">2주</p>
+            <p class="tl-title">OOP 심화</p>
+            <p class="tl-desc">캡슐화, record, equals/hashCode</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">3주</p>
+            <p class="tl-title">제네릭 & 컬렉션</p>
+            <p class="tl-desc">List/Set/Map, Optional</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">4주</p>
+            <p class="tl-title">스트림 & 람다</p>
+            <p class="tl-desc">함수형 인터페이스, Collectors</p>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <p class="tl-week">5주</p>
+            <p class="tl-title">예외 & 동시성</p>
+            <p class="tl-desc">try-with-resources, ExecutorService</p>
+          </div>
+          <div class="tl-item highlight">
+            <div class="tl-dot"></div>
+            <p class="tl-week acc">6~7주</p>
+            <p class="tl-title">Spring Boot</p>
+            <p class="tl-desc">DI, JPA, 예외 처리, 테스트까지 완주</p>
+          </div>
+        </div>
+        <p class="slide-note">
+          이제 Python 백엔드 경험을 Java 생태계 위에서도 그대로 발휘할 수
+          있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 15</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>
