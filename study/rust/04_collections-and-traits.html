@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust 5주차 · 컬렉션과 트레잇</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 14</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">컬렉션과 <em>트레잇</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. 이번 주 학습 목표 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주에 배울 것</h2>
+        <p class="slide-sub">
+          Python에서 list, dict, comprehension으로 하던 일을 Rust에서는 어떻게
+          하는지, 그리고 Java의 interface에 대응하는 trait까지 다룹니다.
+        </p>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">Collections</p>
+            <p class="card-title">Vec &amp; HashMap</p>
+            <p class="card-desc">
+              Python list / dict와 비슷하지만, 소유권 규칙이 그대로 적용됩니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Iterator</p>
+            <p class="card-title">map · filter · collect</p>
+            <p class="card-desc">
+              list comprehension과 결과는 비슷해도, lazy evaluation이라는 중요한
+              차이가 있습니다.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">Trait &amp; Generic</p>
+            <p class="card-title">인터페이스와 타입 매개변수</p>
+            <p class="card-desc">
+              Java interface와 generic에 대응하는 Rust의 문법을 익힙니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. Vec<T> 소개 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Vec&lt;T&gt;: 동적 배열</h2>
+        <p class="slide-sub">
+          Python의 list처럼 크기가 자동으로 늘어나는 배열입니다. 다만 하나의 Vec
+          안에는 <strong>같은 타입 T</strong>만 들어갈 수 있어요.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Python list</p>
+            <ul>
+              <li>타입이 섞여도 됨 [1, "a", 3.0]</li>
+              <li>런타임에 타입 체크</li>
+              <li>append / pop / 인덱싱</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Rust Vec&lt;T&gt;</p>
+            <ul>
+              <li>모든 원소가 동일한 타입 T</li>
+              <li>컴파일 타임에 타입 확정</li>
+              <li>push / pop / 인덱싱 (범위 벗어나면 panic)</li>
+            </ul>
+          </div>
+        </div>
+        <p class="code-label">Vec 기본 사용</p>
+        <div class="code-block">
+          let mut nums: Vec&lt;i32&gt; = Vec::new(); nums.push(10);
+          nums.push(20); nums.push(30); let last = nums.pop();
+          <span class="cm">// Some(30), Vec은 [10, 20]</span> println!("{}",
+          nums[0]); <span class="cm">// 인덱싱, 범위 밖이면 panic!</span>
+
+          <span class="cm">// 매크로로 바로 생성</span>
+          let nums2 = vec![1, 2, 3];
+
+          <span class="cm"
+            >// Python: nums = []; nums.append(10); nums.pop()</span
+          >
+        </div>
+      </div>
+
+      <!-- 04. Vec와 소유권 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Vec 안의 값도 소유권을 따른다</h2>
+        <p class="slide-sub">
+          Vec을 순회하는 방법에 따라 값이 <em>이동(move)</em>되는지,
+          <em>빌려오는(borrow)</em>지가 달라집니다.
+        </p>
+        <p class="code-label">순회 방식과 소유권</p>
+        <div class="code-block">
+          let strings = vec![String::from("a"), String::from("b")]; for s in
+          strings { <span class="cm">// into_iter(): 소유권이 이동</span>
+          println!("{}", s); }
+          <span class="cm"
+            >// println!("{:?}", strings); // ❌ 이미 moved, 컴파일 에러</span
+          >
+
+          let strings2 = vec![String::from("a"), String::from("b")]; for s in
+          &amp;strings2 {
+          <span class="cm">// iter(): 참조로 순회 (빌림)</span> println!("{}",
+          s); } println!("{:?}", strings2);
+          <span class="cm">// ✅ 여전히 사용 가능</span>
+        </div>
+        <p class="slide-note">
+          Python은 list를 순회해도 원본이 그대로 있는 게 당연하지만, Rust는
+          "누가 값을 소유하는가"를 항상 명시적으로 따집니다.
+        </p>
+      </div>
+
+      <!-- 05. HashMap<K, V> -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">HashMap&lt;K, V&gt;: 키-값 저장소</h2>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Python dict</p>
+            <ul>
+              <li>d = {}; d["a"] = 1</li>
+              <li>d.get("a") → None 가능</li>
+              <li>d.setdefault(k, v)</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Rust HashMap&lt;K, V&gt;</p>
+            <ul>
+              <li>use std::collections::HashMap</li>
+              <li>get()은 Option&lt;&amp;V&gt; 반환</li>
+              <li>entry() API로 조건부 삽입</li>
+            </ul>
+          </div>
+        </div>
+        <p class="code-label">insert · get · entry</p>
+        <div class="code-block">
+          use std::collections::HashMap; let mut scores: HashMap&lt;String,
+          i32&gt; = HashMap::new(); scores.insert(String::from("alice"), 90);
+          scores.insert(String::from("bob"), 85); match scores.get("alice") {
+          Some(v) =&gt; println!("alice: {v}"), None =&gt; println!("no entry"),
+          }
+
+          <span class="cm">// entry: 키가 없을 때만 기본값 삽입</span>
+          scores.entry(String::from("carol")).or_insert(0);
+
+          <span class="cm"
+            >// 있으면 값을 꺼내 수정, 없으면 0으로 시작해서 수정</span
+          >
+          *scores.entry(String::from("alice")).or_insert(0) += 1;
+        </div>
+      </div>
+
+      <!-- 06. Iterator: lazy evaluation -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Iterator: map · filter · collect</h2>
+        <p class="slide-sub">
+          결과만 보면 Python의 list comprehension과 비슷하지만, Rust의 iterator
+          adaptor는 <strong>lazy</strong>합니다. collect나 for처럼 "소비"하는
+          시점이 와야 실제로 실행됩니다.
+        </p>
+        <p class="code-label">체이닝 예제</p>
+        <div class="code-block">
+          let nums = vec![1, 2, 3, 4, 5, 6]; let result: Vec&lt;i32&gt; = nums
+          .iter() .filter(|&amp;&amp;n| n % 2 == 0)
+          <span class="cm">// 짝수만 남김 (아직 실행 안 됨)</span> .map(|n| n *
+          n) <span class="cm">// 제곱 (아직 실행 안 됨)</span> .collect();
+          <span class="cm">// 여기서 비로소 실행!</span>
+
+          println!("{:?}", result); <span class="cm">// [4, 16, 36]</span>
+
+          <span class="cm">// Python: [n**2 for n in nums if n % 2 == 0]</span>
+        </div>
+        <p class="slide-note">
+          타입도 강하게 개입합니다: collect()가 무엇으로 모을지는 좌변의 타입
+          표기(Vec&lt;i32&gt;)로 결정됩니다.
+        </p>
+      </div>
+
+      <!-- 07. Trait vs Java interface -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Trait: Java interface에 대응</h2>
+        <p class="slide-sub">
+          trait은 "이 타입이 어떤 메서드를 구현해야 하는가"를 정의합니다. Java의
+          interface와 목적은 같지만 문법과 세부 동작이 다릅니다.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">Java interface</p>
+            <ul>
+              <li>interface Greet { String greet(); }</li>
+              <li>class가 implements로 구현</li>
+              <li>default 키워드로 기본 구현</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">Rust trait</p>
+            <ul>
+              <li>trait Greet { fn greet(&amp;self) -&gt; String; }</li>
+              <li>struct가 impl Trait for Type으로 구현</li>
+              <li>trait 안에 본문을 두면 그게 default method</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 08. Trait 정의와 구현 -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">trait 정의 · impl · default method</h2>
+        <p class="code-label">Greet 트레잇</p>
+        <div class="code-block">
+          trait Greet { fn name(&amp;self) -&gt; String;
+          <span class="cm">// 구현 필수 (본문 없음)</span>
+
+          fn greet(&amp;self) -&gt; String {
+          <span class="cm">// default method</span>
+          format!("안녕하세요, {}입니다", self.name()) } } struct Person { name:
+          String, } impl Greet for Person { fn name(&amp;self) -&gt; String {
+          self.name.clone() }
+          <span class="cm"
+            >// greet()은 구현하지 않아도 default가 그대로 쓰임</span
+          >
+          } let p = Person { name: String::from("지영") }; println!("{}",
+          p.greet()); <span class="cm">// "안녕하세요, 지영입니다"</span>
+        </div>
+      </div>
+
+      <!-- 09. Generic -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Generic: 함수와 구조체에 타입 매개변수</h2>
+        <p class="slide-sub">
+          Java의 &lt;T&gt;와 비슷한 개념이지만, Rust는 트레잇 바운드를 함께
+          명시해서 "T가 무엇을 할 수 있는지"까지 컴파일 타임에 검사합니다.
+        </p>
+        <p class="code-label">제네릭 함수 · 구조체</p>
+        <div class="code-block">
+          fn largest&lt;T: PartialOrd&gt;(list: &amp;[T]) -&gt; &amp;T { let mut
+          max = &amp;list[0]; for item in list { if item &gt; max { max = item;
+          } } max } struct Pair&lt;T&gt; { first: T, second: T, } impl&lt;T:
+          std::fmt::Display&gt; Pair&lt;T&gt; { fn show(&amp;self) {
+          println!("({}, {})", self.first, self.second); } } let p = Pair {
+          first: 1, second: 2 }; p.show(); <span class="cm">// (1, 2)</span>
+        </div>
+      </div>
+
+      <!-- 10. impl Trait / dyn Trait -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">impl Trait: 트레잇 바운드를 간단히</h2>
+        <p class="slide-sub">
+          "이 타입은 몰라도 되고, 이 trait만 구현하면 된다"를 짧게 쓰는
+          문법입니다. 매개변수와 반환 타입 모두에 쓸 수 있어요.
+        </p>
+        <p class="code-label">impl Trait 문법</p>
+        <div class="code-block">
+          <span class="cm"
+            >// 매개변수: T: IntoIterator&lt;Item = i32&gt; 를 줄여 씀</span
+          >
+          fn print_all(items: impl IntoIterator&lt;Item = i32&gt;) { for i in
+          items { println!("{i}"); } }
+
+          <span class="cm"
+            >// 반환 타입에도 사용 가능 (구체 타입은 감춰짐)</span
+          >
+          fn make_greeter(name: String) -&gt; impl Greet { Person { name } }
+
+          <span class="cm"
+            >// 참고: dyn Trait — 런타임에 타입이 결정되는 트레잇 오브젝트</span
+          >
+          let greeters: Vec&lt;Box&lt;dyn Greet&gt;&gt; = vec![ Box::new(Person
+          { name: "Alice".into() }), ];
+        </div>
+        <p class="slide-note">
+          impl Trait은 컴파일 타임에 구체 타입이 정해지고(정적 디스패치), dyn
+          Trait은 실행 중에 결정됩니다(동적 디스패치). 지금은 "이런 게 있다"
+          정도만 기억해도 충분합니다.
+        </p>
+      </div>
+
+      <!-- 11. 실습 미리보기: key-value 스토어 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">실습: 인메모리 key-value 스토어</h2>
+        <p class="slide-sub">
+          HashMap으로 데이터를 저장하고, Storage trait으로 "어떤 저장소든 갖춰야
+          할 인터페이스"를 정의해봅니다.
+        </p>
+        <p class="code-label">Storage trait + MemoryStore</p>
+        <div class="code-block">
+          use std::collections::HashMap; trait Storage { fn set(&amp;mut self,
+          key: String, value: String); fn get(&amp;self, key: &amp;str) -&gt;
+          Option&lt;&amp;String&gt;; } struct MemoryStore { data:
+          HashMap&lt;String, String&gt;, } impl Storage for MemoryStore { fn
+          set(&amp;mut self, key: String, value: String) { self.data.insert(key,
+          value); } fn get(&amp;self, key: &amp;str) -&gt;
+          Option&lt;&amp;String&gt; { self.data.get(key) } }
+
+          <span class="cm">// 나중에 파일 저장 버전(FileStore)을 추가해도</span>
+          <span class="cm"
+            >// Storage trait만 구현하면 동일하게 쓸 수 있어요.</span
+          >
+        </div>
+      </div>
+
+      <!-- 12. 흔한 실수 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">흔한 실수</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>trait bound가 안 맞아서 나는 컴파일 에러</strong>
+              <span>
+                largest::&lt;T&gt;(&amp;list)에서 T가 PartialOrd를 구현하지
+                않으면 "binary operation `&gt;` cannot be applied" 에러가
+                납니다. 제네릭 함수 안에서 쓰는 연산자만큼 트레잇 바운드를
+                붙여야 해요.
+              </span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>iterator adaptor가 lazy라서 아무 일도 안 일어남</strong>
+              <span>
+                nums.iter().map(|n| println!("{n}")); 처럼 collect나 for 없이
+                끝내면 map 클로저가 아예 실행되지 않습니다. "unused `Map` that
+                must be used" 경고가 힌트예요.
+              </span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>순회하면서 동시에 Vec을 수정</strong>
+              <span>
+                for x in &amp;v { v.push(x); } 는 "cannot borrow `v` as mutable
+                because it is also borrowed as immutable" 에러가 납니다. 순회가
+                끝난 뒤에 수정하거나 인덱스로 접근하세요.
+              </span>
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>HashMap에 insert한 뒤 원본 변수를 다시 사용</strong>
+              <span>
+                scores.insert(key, value) 는 key/value의 소유권을 가져갑니다.
+                String을 넣은 뒤 원래 변수를 또 쓰려 하면 "value borrowed here
+                after move" 에러가 발생해요. 필요하면 clone()하세요.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. 확인해보기 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">확인해보기</h2>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div>
+              <p class="checkin-main">
+                Vec의 iter()와 into_iter()는 뭐가 다를까?
+              </p>
+              <p class="checkin-hint">
+                참조를 순회하는지, 소유권을 이동시키는지를 생각해보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div>
+              <p class="checkin-main">
+                map/filter만 쓰고 collect를 안 하면 어떻게 될까?
+              </p>
+              <p class="checkin-hint">
+                lazy evaluation과 "소비"라는 단어를 떠올려보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div>
+              <p class="checkin-main">
+                trait의 default method는 언제 유용할까?
+              </p>
+              <p class="checkin-hint">
+                모든 구현체가 공통으로 쓸 동작이 있을 때를 생각해보세요.
+              </p>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div>
+              <p class="checkin-main">impl Trait과 dyn Trait의 차이는?</p>
+              <p class="checkin-hint">
+                정적 디스패치 vs 동적 디스패치, 컴파일 타임 vs 런타임.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 14. 마무리 요약 -->
+      <div class="slide" data-index="13">
+        <p class="eyebrow">5주차 · 컬렉션과 트레잇</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이번 주 정리</h2>
+        <p class="slide-sub">
+          Vec과 HashMap으로 데이터를 담고, Iterator로 변형하고, trait과
+          generic으로 공통 동작을 추상화하는 법을 배웠습니다.
+        </p>
+        <div class="stat-row">
+          <div class="stat-item">
+            <p class="stat-num">2</p>
+            <p class="stat-label">컬렉션 타입 (Vec, HashMap)</p>
+          </div>
+          <div class="stat-item">
+            <p class="stat-num">3</p>
+            <p class="stat-label">체이닝 메서드 (map · filter · collect)</p>
+          </div>
+          <div class="stat-item">
+            <p class="stat-num">1</p>
+            <p class="stat-label">실습 프로젝트 (key-value 스토어)</p>
+          </div>
+        </div>
+        <p class="slide-note">
+          다음 주 예고: 6주차 · 동시성 — 스레드, Arc&lt;Mutex&lt;T&gt;&gt;,
+          채널, async/await 기초
+        </p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 14</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>

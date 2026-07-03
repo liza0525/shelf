@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust 4주차 · 구조체, 열거형과 패턴 매칭</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maru Buri:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #f6f2eb;
+        --surface: #edeae2;
+        --border: #e4ddd0;
+        --muted: #9a9590;
+        --text: #282420;
+        --accent: #3d5a80;
+        --accent2: #b85c38;
+        --danger: #b85c38;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+
+      .deck {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 6rem 8rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        overflow-y: auto;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .eyebrow {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.94rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 1.4rem;
+      }
+
+      .slide-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .slide-title em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .slide-sub {
+        font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+        color: var(--muted);
+        line-height: 1.8;
+        max-width: 640px;
+        font-family: "Maru Buri", serif;
+        margin: 0 auto;
+      }
+
+      .rule {
+        width: 3rem;
+        height: 2px;
+        background: var(--accent);
+        margin: 0 auto 2rem;
+      }
+
+      /* GRID */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-top: 2rem;
+      }
+
+      /* CARD */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+      }
+
+      .card-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+
+      .card-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-family: "Maru Buri", serif;
+      }
+
+      /* PROBLEM/LIST ROW (also used for pitfalls, exercises, steps) */
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .problem-row {
+        display: grid;
+        grid-template-columns: 2rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+      }
+
+      .problem-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--danger);
+        padding-top: 0.1rem;
+      }
+
+      .problem-content strong {
+        font-family: "Pretendard", sans-serif;
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+      }
+
+      .problem-content span {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+
+      /* TIMELINE (good for step-by-step flows) */
+      .timeline {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 2.5rem;
+        max-width: 820px;
+        width: 100%;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: var(--border);
+        z-index: 0;
+      }
+
+      .tl-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 0.5rem;
+      }
+
+      .tl-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--muted);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+      }
+
+      .tl-item.highlight .tl-dot {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .tl-week {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .tl-week.acc {
+        color: var(--accent);
+      }
+
+      .tl-title {
+        font-family: "Pretendard", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+      }
+
+      .tl-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        line-height: 1.6;
+        max-width: 160px;
+      }
+
+      /* CHECKIN (good for "check your understanding" boxes) */
+      .checkin-box {
+        margin-top: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        padding: 1.6rem 2rem;
+        text-align: left;
+      }
+
+      .checkin-row {
+        display: flex;
+        gap: 0.8rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .checkin-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkin-main {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .checkin-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+        margin-top: 0.2rem;
+      }
+
+      /* GOAL / COMPARE (great for "Python 대비 Rust" comparisons) */
+      .goal-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-top: 2rem;
+        max-width: 760px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .goal-col {
+        padding: 1.4rem 1.6rem;
+        border-radius: 0;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        text-align: left;
+      }
+
+      .goal-col.bad {
+        background: #fdf5ee;
+        border: 1px solid #b85c38;
+      }
+      .goal-col.good {
+        background: #eef3f8;
+        border: 1px solid #3d5a80;
+      }
+
+      .goal-col .col-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 0.9rem;
+      }
+
+      .goal-col.bad .col-label {
+        color: #b85c38;
+      }
+      .goal-col.good .col-label {
+        color: #3d5a80;
+      }
+
+      .goal-col ul {
+        list-style: none;
+      }
+      .goal-col ul li {
+        padding: 0.2rem 0;
+        color: var(--text);
+        font-family: "Maru Buri", serif;
+      }
+      .goal-col.bad ul li::before {
+        content: "✕  ";
+        color: #b85c38;
+      }
+      .goal-col.good ul li::before {
+        content: "✓  ";
+        color: #3d5a80;
+      }
+
+      /* CODE BLOCK (new — for Rust snippets. Keep this styling identical across all chapter files) */
+      .code-block {
+        background: #282420;
+        color: #f6f2eb;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        padding: 1.4rem 1.6rem;
+        text-align: left;
+        border-radius: 0;
+        margin-top: 1.5rem;
+        max-width: 820px;
+        width: 100%;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .code-block .cm {
+        color: #9a9590;
+      }
+
+      .code-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 1.6rem;
+        margin-bottom: 0.6rem;
+        text-align: left;
+        width: 100%;
+        max-width: 820px;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        bottom: 2rem;
+        right: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 100;
+      }
+
+      .nav-btn {
+        width: 2.4rem;
+        height: 2.4rem;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        border-radius: 0;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--accent);
+        background: #e4ddd0;
+      }
+      .nav-btn:disabled {
+        opacity: 0.25;
+        cursor: default;
+      }
+
+      .nav-counter {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.75rem;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        min-width: 3rem;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.4s ease;
+        z-index: 100;
+      }
+
+      .slide-tag {
+        position: fixed;
+        top: 1.8rem;
+        right: 2.5rem;
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        z-index: 100;
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 3rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-item .stat-num {
+        font-family: "Pretendard", sans-serif;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      .stat-item .stat-label {
+        font-family: "Pretendard", sans-serif;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        letter-spacing: 0.06em;
+      }
+
+      .slide-note {
+        margin-top: 1.2rem;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-family: "Maru Buri", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="slide-tag" id="slideTag">1 / 13</div>
+
+    <div class="deck" id="deck">
+      <!-- 01. TITLE -->
+      <div class="slide active" data-index="0">
+        <p class="eyebrow">4주차 · 데이터 모델링</p>
+        <div class="rule"></div>
+        <h1 class="slide-title">구조체, 열거형과 <em>패턴 매칭</em></h1>
+        <p class="slide-sub">← → 키로 페이지를 넘길 수 있어요.</p>
+      </div>
+
+      <!-- 02. struct 정의 -->
+      <div class="slide" data-index="1">
+        <p class="eyebrow">STRUCT</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">struct — 데이터를 묶는 상자</h2>
+        <p class="slide-sub">
+          여러 필드를 하나의 타입으로 묶는다는 점에서 Python의 클래스, Java의
+          필드 선언과 비슷해요. 다만 Rust의 struct는 기본적으로 데이터만 담고,
+          동작(메서드)은 별도의 <code>impl</code> 블록에서 정의해요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          struct User { username: String, email: String, active: bool, }
+
+          <span class="cm">// 필드 이름: 값 형태로 인스턴스를 만든다</span>
+          let user1 = User { username: String::from("shelfy"), email:
+          String::from("shelfy@rust.dev"), active: true, }; println!("{}",
+          user1.username);
+        </div>
+      </div>
+
+      <!-- 03. impl 블록: 메서드 & 연관 함수 -->
+      <div class="slide" data-index="2">
+        <p class="eyebrow">IMPL BLOCK</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">impl — 메서드와 연관 함수</h2>
+        <p class="slide-sub">
+          <code>&amp;self</code>를 받으면 인스턴스에 붙는 메서드, 받지 않으면
+          <strong>연관 함수(associated function)</strong>예요.
+          <code>Self::new(...)</code>는 Java의 생성자·static factory method
+          자리를 대신하는 Rust식 관용구예요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          impl User {
+          <span class="cm">// 연관 함수 — self가 없다, 생성자처럼 사용</span>
+          fn new(username: &amp;str, email: &amp;str) -> Self { Self { username:
+          username.to_string(), email: email.to_string(), active: true, } }
+
+          <span class="cm">// 메서드 — &amp;self로 인스턴스를 빌려온다</span>
+          fn summary(&amp;self) -> String { format!("{} &lt;{}&gt;",
+          self.username, self.email) } } let user2 = User::new("lizzie",
+          "lizzie@rust.dev"); println!("{}", user2.summary());
+        </div>
+      </div>
+
+      <!-- 04. enum: variant마다 다른 데이터 -->
+      <div class="slide" data-index="3">
+        <p class="eyebrow">ENUM</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">enum — Java보다 훨씬 강력한 열거형</h2>
+        <p class="slide-sub">
+          Java의 enum은 상수 목록에 가깝지만, Rust의 enum은
+          <strong>variant마다 서로 다른 데이터</strong>를 가질 수 있어요. 하나의
+          타입 안에 "값이 없음 / 값 하나 / 여러 필드"를 모두 표현할 수 있죠.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          enum WebEvent { PageLoad,
+          <span class="cm">// 데이터 없는 variant</span> KeyPress(char),
+          <span class="cm">// 값 하나를 담는 variant</span> Click { x: i64, y:
+          i64 },
+          <span class="cm">// 구조체처럼 여러 필드를 담는 variant</span> } fn
+          handle(event: WebEvent) { match event { WebEvent::PageLoad =>
+          println!("페이지 로드됨"), WebEvent::KeyPress(c) => println!("키 입력:
+          {}", c), WebEvent::Click { x, y } => println!("클릭 위치: ({}, {})",
+          x, y), } }
+        </div>
+      </div>
+
+      <!-- 05. Option<T> -->
+      <div class="slide" data-index="4">
+        <p class="eyebrow">OPTION&lt;T&gt;</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Option&lt;T&gt; — null이 없는 세계</h2>
+        <p class="slide-sub">
+          Rust에는 null이 없어요. "값이 없을 수 있음"은
+          <code>Option&lt;T&gt;</code> 타입으로 표현하고, 컴파일러가 이 가능성을
+          반드시 처리하게 강제해요.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">PYTHON / JAVA</p>
+            <ul>
+              <li>None / null이 어디서나 슬쩍 등장</li>
+              <li>user.name 접근 시 런타임에야 터짐</li>
+              <li>AttributeError / NullPointerException</li>
+              <li>Tony Hoare가 "십억 달러의 실수"라 부른 그것</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">RUST Option&lt;T&gt;</p>
+            <ul>
+              <li>enum Option&lt;T&gt; { Some(T), None }</li>
+              <li>값이 없을 수 있다는 게 타입 시그니처에 드러남</li>
+              <li>match/if let으로 처리 안 하면 컴파일 에러</li>
+              <li>NullPointerException 자체가 발생할 수 없음</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 06. Result<T, E> -->
+      <div class="slide" data-index="5">
+        <p class="eyebrow">RESULT&lt;T, E&gt;</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">Result&lt;T, E&gt; — 예외 대신 값</h2>
+        <p class="slide-sub">
+          Rust에는 예외(exception)가 없어요. 실패할 수 있는 함수는
+          <code>Result&lt;T, E&gt;</code>를 리턴해서 "성공 아니면 실패"를
+          타입으로 드러내요.
+        </p>
+        <div class="goal-compare">
+          <div class="goal-col bad">
+            <p class="col-label">PYTHON / JAVA</p>
+            <ul>
+              <li>try/except: 뭐가 터질지 시그니처만 봐선 모름</li>
+              <li>Java checked exception도 놓치기 쉬움</li>
+              <li>처리 잊으면 프로그램이 그냥 죽음</li>
+            </ul>
+          </div>
+          <div class="goal-col good">
+            <p class="col-label">RUST Result&lt;T, E&gt;</p>
+            <ul>
+              <li>enum Result&lt;T, E&gt; { Ok(T), Err(E) }</li>
+              <li>실패 가능성이 함수 시그니처에 명시됨</li>
+              <li>무시하면 컴파일러가 경고를 띄움</li>
+            </ul>
+          </div>
+        </div>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          use std::num::ParseIntError; fn parse_age(input: &amp;str) ->
+          Result&lt;u32, ParseIntError&gt; { let age: u32 = input.parse()?;
+          Ok(age) }
+        </div>
+      </div>
+
+      <!-- 07. match -->
+      <div class="slide" data-index="6">
+        <p class="eyebrow">MATCH</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">match — exhaustive한 패턴 매칭</h2>
+        <p class="slide-sub">
+          Python의 match-case보다 강력해요. variant, 범위, 구조 분해,
+          가드(guard) 조건까지 다루고,
+          <strong>모든 경우를 빠짐없이 처리해야</strong> 컴파일이 통과돼요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          enum Direction { North, South, East, West } fn describe(d: Direction)
+          -> &amp;'static str { match d { Direction::North => "북쪽",
+          Direction::South => "남쪽", Direction::East => "동쪽", Direction::West
+          => "서쪽",
+          <span class="cm">// variant 하나라도 빠지면 컴파일 에러!</span>
+          } } let n = 7; match n { 0 => println!("영"), 1..=5 => println!("1~5
+          사이"), n if n % 2 == 0 => println!("짝수: {}", n), _ => println!("그
+          외: {}", n), }
+        </div>
+      </div>
+
+      <!-- 08. if let -->
+      <div class="slide" data-index="7">
+        <p class="eyebrow">IF LET</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">if let — match의 축약형</h2>
+        <p class="slide-sub">
+          "한 가지 패턴에만 관심 있고 나머지는 무시하고 싶을 때" match 대신
+          <code>if let</code>을 쓰면 코드가 훨씬 간결해져요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          let config_max: Option&lt;u8&gt; = Some(3);
+
+          <span class="cm">// match로 쓰면 다소 장황함</span>
+          match config_max { Some(max) => println!("최댓값: {}", max), None =>
+          (), }
+
+          <span class="cm">// if let으로 축약 — "Some일 때만 관심 있음"</span>
+          if let Some(max) = config_max { println!("최댓값: {}", max); } else {
+          println!("설정 없음"); }
+        </div>
+      </div>
+
+      <!-- 09. ? 연산자 -->
+      <div class="slide" data-index="8">
+        <p class="eyebrow">? OPERATOR</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">? 연산자로 에러 전파하기</h2>
+        <p class="slide-sub">
+          <code>?</code>는 Result가 Err면 그 자리에서 즉시 함수를 빠져나가
+          호출자에게 Err를 돌려주고, Ok면 안의 값을 꺼내줘요. try/except 블록
+          여러 겹을 대신하는 셈이에요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          use std::fs::File; use std::io::{self, Read}; fn
+          read_username_from_file() -> Result&lt;String, io::Error&gt; { let mut
+          file = File::open("username.txt")?;
+          <span class="cm">// 실패 시 즉시 Err 반환</span> let mut username =
+          String::new(); file.read_to_string(&amp;mut username)?; Ok(username) }
+          match read_username_from_file() { Ok(name) => println!("사용자: {}",
+          name), Err(e) => println!("읽기 실패: {}", e), }
+        </div>
+      </div>
+
+      <!-- 10. 실습: CSV 파싱 -->
+      <div class="slide" data-index="9">
+        <p class="eyebrow">실습 미리보기</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">파일 파싱 도구 — CSV → struct 벡터</h2>
+        <p class="slide-sub">
+          지금까지 배운 struct, Result, ?를 한 번에 써먹는 실습이에요. CSV 한
+          줄을 파싱해서 실패하면 Err, 성공한 줄만 모아 Vec&lt;Record&gt;를
+          만들어요.
+        </p>
+        <p class="code-label">CODE</p>
+        <div class="code-block">
+          struct Record { name: String, age: u32, } fn parse_line(line:
+          &amp;str) -> Result&lt;Record, String&gt; { let parts:
+          Vec&lt;&amp;str&gt; = line.split(',').collect(); let name =
+          parts.get(0).ok_or("이름 없음")?.to_string(); let age = parts.get(1)
+          .ok_or("나이 없음")? .parse() .map_err(|_| "숫자가 아님")?; Ok(Record
+          { name, age }) } fn parse_csv(text: &amp;str) -> Vec&lt;Record&gt; {
+          text.lines() .filter_map(|line| parse_line(line).ok()) .collect() }
+        </div>
+      </div>
+
+      <!-- 11. 흔한 실수 -->
+      <div class="slide" data-index="10">
+        <p class="eyebrow">흔한 실수</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">이런 실수는 하지 마세요</h2>
+        <div class="problem-list">
+          <div class="problem-row">
+            <span class="problem-num">01</span>
+            <div class="problem-content">
+              <strong>unwrap() 남발</strong>
+              <span
+                >Option이 None이거나 Result가 Err일 때 unwrap()은 그 자리에서
+                panic!으로 프로그램을 죽여요. 실무 코드에서는 match, if let, ?로
+                명시적으로 처리하세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">02</span>
+            <div class="problem-content">
+              <strong>match에서 _ 와일드카드 남용</strong>
+              <span
+                >모든 가지를 _로 뭉개면 exhaustiveness 체크의 장점이 사라져요.
+                enum에 variant가 새로 추가돼도 컴파일러가 알려주지 않아요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">03</span>
+            <div class="problem-content">
+              <strong>Result를 그냥 무시하기</strong>
+              <span
+                >#[must_use]로 표시된 Result를 받고도 아무 처리 안 하면
+                컴파일러가 경고해요. 경고를 무시하지 말고 반드시 에러 케이스를
+                다루세요.</span
+              >
+            </div>
+          </div>
+          <div class="problem-row">
+            <span class="problem-num">04</span>
+            <div class="problem-content">
+              <strong>데이터를 가진 variant를 값처럼 쓰기</strong>
+              <span
+                >WebEvent::KeyPress(c)처럼 데이터를 담은 variant는 match/if
+                let으로 구조 분해해야 안의 값을 꺼낼 수 있어요. 그냥 비교하면
+                컴파일 에러가 나요.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. 확인해보기 -->
+      <div class="slide" data-index="11">
+        <p class="eyebrow">확인해보기</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">스스로 점검하기</h2>
+        <div class="checkin-box">
+          <div class="checkin-row">
+            <div>
+              <div class="checkin-main">
+                Option&lt;T&gt;과 Result&lt;T, E&gt;의 차이를 한 문장으로 설명할
+                수 있나요?
+              </div>
+              <div class="checkin-hint">
+                힌트: 값이 없을 수 있음 vs 실패했을 때 이유(E)까지 담고 싶음
+              </div>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div>
+              <div class="checkin-main">
+                match 대신 if let을 쓰는 게 더 적절한 경우는 언제인가요?
+              </div>
+              <div class="checkin-hint">
+                힌트: 관심 있는 패턴이 하나뿐이고 나머지는 그냥 무시하고 싶을 때
+              </div>
+            </div>
+          </div>
+          <div class="checkin-row">
+            <div>
+              <div class="checkin-main">
+                실무 코드에서 unwrap()을 함부로 쓰면 안 되는 이유는?
+              </div>
+              <div class="checkin-hint">
+                힌트: None/Err일 때 panic!이 나서 프로그램이 그대로 죽어버림
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. 마무리 요약 -->
+      <div class="slide" data-index="12">
+        <p class="eyebrow">SUMMARY</p>
+        <div class="rule"></div>
+        <h2 class="slide-title">4주차 요약</h2>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-label">STRUCT / IMPL</p>
+            <p class="card-title">데이터 + 동작 분리</p>
+            <p class="card-desc">
+              struct는 필드만, impl은 메서드와 Self::new 연관 함수를 담당해요.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">ENUM</p>
+            <p class="card-title">variant마다 다른 데이터</p>
+            <p class="card-desc">
+              Java enum보다 강력하게, 하나의 타입 안에서 여러 형태를 표현해요.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">OPTION / RESULT</p>
+            <p class="card-title">null과 예외를 대신하는 타입</p>
+            <p class="card-desc">
+              있음/없음, 성공/실패를 타입으로 드러내고 컴파일러가 처리를
+              강제해요.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">MATCH</p>
+            <p class="card-title">exhaustive 패턴 매칭</p>
+            <p class="card-desc">
+              모든 경우를 빠짐없이 다뤄야 컴파일이 통과돼요.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">IF LET</p>
+            <p class="card-title">match의 간결한 축약형</p>
+            <p class="card-desc">
+              한 가지 패턴에만 관심 있을 때 코드를 짧게 써요.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card-label">? 연산자</p>
+            <p class="card-title">에러를 위로 전파</p>
+            <p class="card-desc">
+              Err면 즉시 반환, Ok면 값을 꺼내는 체이닝을 가능하게 해요.
+            </p>
+          </div>
+        </div>
+        <p class="slide-note">
+          다음 5주차에서는 Vec, HashMap, Iterator와 Trait, Generic을 다뤄요.
+        </p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled>◀</button>
+      <span class="nav-counter" id="counter">1 / 13</span>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      const total = slides.length;
+      let current = 0;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+      const slideTag = document.getElementById("slideTag");
+      const progress = document.getElementById("progress");
+
+      function goTo(idx) {
+        if (idx < 0 || idx >= total) return;
+        slides[current].classList.remove("active");
+        setTimeout(() => {
+          current = idx;
+          slides[current].classList.add("active");
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === total - 1;
+          counter.textContent = `${current + 1} / ${total}`;
+          slideTag.textContent = `${current + 1} / ${total}`;
+          progress.style.width = `${((current + 1) / total) * 100}%`;
+        }, 350);
+      }
+
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(current + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(current - 1);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".nav")) return;
+        if (e.clientX > window.innerWidth / 2) goTo(current + 1);
+        else goTo(current - 1);
+      });
+
+      progress.style.width = `${(1 / total) * 100}%`;
+    </script>
+  </body>
+</html>
